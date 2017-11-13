@@ -47,5 +47,5 @@ Kin
 				position
 				orientation
 				trackingState
-				leftHandState
-				rightHandState
+            leftHandState
+            rightHandState
