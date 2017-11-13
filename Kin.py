@@ -1,5 +1,6 @@
 import scipy.io as sio
 import InfoVideo
+from Face import Face
 
 class Kin:
     def __init__(self):
@@ -10,7 +11,8 @@ class Kin:
 
     def _processMatlabData(self, data):
         infoVideo = data['info_video']
-        return InfoVideo.InfoVideo(infoVideo)
+        face = data['face_gallery'][50]
+        return Face(face)
 
     def getInfoVideo(self):
         return self._data
