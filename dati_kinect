@@ -1,0 +1,51 @@
+Dati video matlab
+
+body_gallery (vector[frames])
+	Position (vector[joints][3]
+	Orientation (vector[joints][4])
+	TrackingState (vector[joints][1])
+	LeftHandState (int)
+	RightHandState (int)
+	ID (int)
+colorScale (float)
+depthCameraIntrinsics (vector[7 ?])
+face_gallery (vector[frames])
+	FaceBox (vector[4])
+	FacePoints (vector[eye_left, eye_right, nose, mouth_corner_left, mouth_corner_right][2])
+	FacePoints_RGB (vector[2] : rgb + ?
+	FaceRotation (pitch, yaw, roll)
+	FaceProperties (vector[7])
+	ID (int)
+	FacePoints3D (vector[5][3])
+HD_face_gallery
+	FaceBox
+	FaceRotation
+	HeadPivot
+	AnimationUnits
+	ShapeUnits
+	FaceModel
+	ID
+info_video
+	Duration
+	Frames
+	fps
+	
+	
+	
+Kin
+	InfoVideo
+	Frames[]
+		Face
+			boundingBox[]
+			points[]
+			points3D[]
+			rotation[]
+			properties[]
+		FaceHD
+		Body
+			Joints[]
+				position
+				orientation
+				trackingState
+				leftHandState
+				rightHandState
