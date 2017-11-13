@@ -1,16 +1,24 @@
 import scipy.io as sio
 import InfoVideo
+import Frame
+import Face
+import FaceHD
+import Body
 
 class Kin:
     def __init__(self):
-        self._data = None
+        self._infoVideo = None
+        self._frames = None
 
     def load(self, filename):
-        self._data = self._processMatlabData(sio.loadmat(filename, squeeze_me=True))
+        self._processMatlabData(sio.loadmat(filename, squeeze_me=True))
 
     def _processMatlabData(self, data):
-        infoVideo = data['info_video']
-        return InfoVideo.InfoVideo(infoVideo)
-
-    def getInfoVideo(self):
-        return self._data
+        self._infoVideo = InfoVideo.InfoVideo(data)
+        self._frames = array()
+        for frame_i in range(self._infoVideo._frames):
+            face = Face.Face(data['face_gallery'][frame_i])
+            faceHD = FaceHD.FaceHD(data['HD_face_gallery'][frame_i])
+            body = Body.Body(data['body_gallery'][frame_i])
+            frame = Frame.Frame(face, faceHD, body)
+            self._frames += frame
