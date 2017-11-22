@@ -29,3 +29,9 @@ class Kin:
                 body = Body.Body(data['body_gallery'][frame_i])
             frame = Frame.Frame(face, face, body)
             self._frames.append(frame)
+
+    def getDescriptors(self):
+        descriptors = []
+        blockSize = 3
+        for i in range(blockSize - 1, len(self._frames)):
+            
