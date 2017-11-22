@@ -3,3 +3,12 @@ class Point3D:
         self._position = position
         self._orientation = orientation
         self._trackingState = trackingState
+
+    def getX(self):
+        return self._position
+
+    def getY(self):
+        return self._orientation
+
+    def getZ(self):
+        return self._trackingState

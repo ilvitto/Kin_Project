@@ -18,13 +18,15 @@ class Kin:
 
     def _processMatlabData(self, data):
         self._infoVideo = InfoVideo.InfoVideo(data['info_video'])
-        self._frames = {}
+        self._frames = []
         for frame_i in range(self._infoVideo._frames):
-
-            if data['face_gallery'][frame_i] != None:
-                print frame_i + 1
+            face = None
+            body = None
+            print data['face_gallery'][frame_i].size
+            if data['face_gallery'][frame_i].size > 0:
                 face = Face.Face(data['face_gallery'][frame_i])
+            if data['body_gallery'][frame_i].size > 0:
                 #faceHD = FaceHD.FaceHD(data['HD_face_gallery'][frame_i])
                 body = Body.Body(data['body_gallery'][frame_i])
-                frame = Frame.Frame(face, face, body)
-                self._frames += frame
+            frame = Frame.Frame(face, face, body)
+            self._frames.append(frame)

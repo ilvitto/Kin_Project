@@ -8,13 +8,13 @@ class Body:
         self._rightHandState = self.getRightHandState(frame)
 
     def getPoints(self, frame):
-        self._points = {}
+        self._points = []
         positions = self.getPosition(frame)
         orientations = self.getOrientation(frame)
         trackingStates = self.getTrackingState(frame)
-        for i in range(len(positions)):
-            point = Point3D.Point3D(positions.get(i),orientations.get(i), trackingStates.get(i))
-            self._points += point
+        for i in range(positions.size):
+            point = Point3D.Point3D(positions.item()[i],orientations.item()[i], trackingStates.item()[i])
+            self._points.append(point)
 
     def getPosition(self, frame):
         return frame['Position']
