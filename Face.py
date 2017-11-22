@@ -30,7 +30,7 @@ class Face:
         return points
 
     def _loadRotation(self, data):
-        Rotation3D(data["FaceRotation"].item()[0], data["FaceRotation"].item()[1], data["FaceRotation"].item()[2])
+        return Rotation3D(data["FaceRotation"].item()[0], data["FaceRotation"].item()[1], data["FaceRotation"].item()[2])
 
     def _loadProperties(self, data):
         properties = data['FaceProperties'].item()

@@ -22,10 +22,9 @@ class Kin:
         for frame_i in range(self._infoVideo._frames):
             face = None
             body = None
-            print data['face_gallery'][frame_i].size
-            if data['face_gallery'][frame_i].size > 0:
+            if data['face_gallery'][frame_i].size == 1:
                 face = Face.Face(data['face_gallery'][frame_i])
-            if data['body_gallery'][frame_i].size > 0:
+            if data['body_gallery'][frame_i].size == 1:
                 #faceHD = FaceHD.FaceHD(data['HD_face_gallery'][frame_i])
                 body = Body.Body(data['body_gallery'][frame_i])
             frame = Frame.Frame(face, face, body)
