@@ -1,4 +1,7 @@
+from array import array
+
 import scipy.io as sio
+import numpy as np
 import InfoVideo
 import Frame
 import Face
@@ -14,11 +17,14 @@ class Kin:
         self._processMatlabData(sio.loadmat(filename, squeeze_me=True))
 
     def _processMatlabData(self, data):
-        self._infoVideo = InfoVideo.InfoVideo(data)
-        self._frames = array()
+        self._infoVideo = InfoVideo.InfoVideo(data['info_video'])
+        self._frames = {}
         for frame_i in range(self._infoVideo._frames):
-            face = Face.Face(data['face_gallery'][frame_i])
-            faceHD = FaceHD.FaceHD(data['HD_face_gallery'][frame_i])
-            body = Body.Body(data['body_gallery'][frame_i])
-            frame = Frame.Frame(face, faceHD, body)
-            self._frames += frame
+
+            if data['face_gallery'][frame_i] != None:
+                print frame_i + 1
+                face = Face.Face(data['face_gallery'][frame_i])
+                #faceHD = FaceHD.FaceHD(data['HD_face_gallery'][frame_i])
+                body = Body.Body(data['body_gallery'][frame_i])
+                frame = Frame.Frame(face, face, body)
+                self._frames += frame

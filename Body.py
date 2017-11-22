@@ -1,4 +1,5 @@
 import Point3D
+import numpy as np
 
 class Body:
     def __init__(self, frame):
@@ -7,12 +8,11 @@ class Body:
         self._rightHandState = self.getRightHandState(frame)
 
     def getPoints(self, frame):
-        self._points = array()
+        self._points = {}
         positions = self.getPosition(frame)
         orientations = self.getOrientation(frame)
         trackingStates = self.getTrackingState(frame)
-
-        for i in xrange(len(positions)):
+        for i in range(len(positions)):
             point = Point3D.Point3D(positions.get(i),orientations.get(i), trackingStates.get(i))
             self._points += point
 
