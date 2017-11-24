@@ -34,4 +34,8 @@ class Kin:
         descriptors = []
         blockSize = 3
         for i in range(blockSize - 1, len(self._frames)):
-            
+            frames = []
+            for j in range(i - blockSize + 1, i):
+                frames.append(self._frames[j])
+            descriptors.append(Check3Frames(frames)._descriptor)
+        return descriptors
