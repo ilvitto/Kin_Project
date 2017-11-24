@@ -8,6 +8,8 @@ import Face
 import FaceHD
 import Body
 from Check3Frames import Check3Frames
+from Descriptor import Descriptor
+from matplotlib import pyplot as plt
 
 class Kin:
     def __init__(self):
@@ -41,4 +43,14 @@ class Kin:
             for j in range(i - blockSize + 1, i):
                 frames.append(self._frames[j])
             descriptors.append(Check3Frames(frames)._descriptor)
+
+        distances1 = []
+        distances2 = []
+        for i in range(len(self._frames)):
+            distances1.append(Descriptor(self._frames[i])._shoulderDistance)
+            distances2.append(Descriptor(self._frames[i])._shoulderDistance2)
+        plt.plot(distances1)
+        plt.plot(distances2)
+        plt.show()
+
         return descriptors
