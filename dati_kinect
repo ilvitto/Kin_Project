@@ -3,7 +3,7 @@ Dati video matlab
 body_gallery (vector[frames])
 	Position (vector[joints][3]
 	Orientation (vector[joints][4])
-	TrackingState (vector[joints][1])
+	TrackingState (vector[joints][1]) NotTracked=0, Inferred=1, or Tracked=2
 	LeftHandState (int)
 	RightHandState (int)
 	ID (int)
