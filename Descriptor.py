@@ -30,28 +30,32 @@ class Descriptor:
 
     def __init__(self, frame):
         if(frame._body is not None):
-            self._height = None
-            self._shoulderDistance = self.shoulderDistance(frame._body._points)
-            self._shoulderDistance2 = self.shoulderDistance2(frame._body._points)
-            self._leftArm = None
-            self._rightArm = None
-            self._leftLeg = None
-            self._rightLeg = None
+            self._frame = frame
+            self._joints = frame._body._points
+            self._shoulderDistance = self.getShoulderDistance(frame)
+            self._shoulderDistance2 = self.getShoulderDistance2(frame)
+            self._leftArmLong = self.getLeftArmLong(frame)
+            self._rightArmLong = self.getRightArmLong(frame)
+            self._leftLegLong = self.getLeftLegLong(frame)
+            self._rightLegLong = self.getRightLegLong(frame)
+            self._height = self.getHeight(frame)
         else:
-            self._height = 0
+            self._frame = None
+            self._joints = None
             self._shoulderDistance = 0
             self._shoulderDistance2 = 0
-            self._leftArm = 0
-            self._rightArm = 0
-            self._leftLeg = 0
-            self._rightLeg = 0
+            self._leftArmLong = 0
+            self._rightArmLong = 0
+            self._leftLegLong = 0
+            self._rightLegLong = 0
+            self._height = 0
 
+    def getShoulderDistance(self, frame):
+        return frame._body._points[4].distance(frame._body._points[20]) + frame._body._points[20].distance(frame._body._points[8])
 
-    def shoulderDistance(self, points):
-        return points[4].distance(points[20]) + points[20].distance(points[8])
+    def getShoulderDistance2(self, frame):
+        return frame._body._points[4].distance(frame._body._points[8])
 
-    def shoulderDistance2(self, points):
-        return points[4].distance(points[8])
     # 4->5->6
     def getLeftArmLong(self, frame):
         if self.isTrackedPoint(frame, 4) and self.isTrackedPoint(frame, 5) and self.isTrackedPoint(frame, 6):
@@ -100,3 +104,6 @@ class Descriptor:
 
     def shoulderDistance(self, frame):
         return frame._body._points[4].distance(frame._body._points[20]) + frame._body._points[20].distance(frame._body._points[8])
+
+    def distance(self, p1, p2):
+        return p1.distance(p2)

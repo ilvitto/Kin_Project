@@ -47,10 +47,8 @@ class Kin:
         distances1 = []
         distances2 = []
         for i in range(len(self._frames)):
-            distances1.append(Descriptor(self._frames[i])._shoulderDistance)
-            distances2.append(Descriptor(self._frames[i])._shoulderDistance2)
+            distances1.append(Descriptor(self._frames[i])._height)
         plt.plot(distances1)
-        plt.plot(distances2)
         plt.show()
 
         return descriptors
