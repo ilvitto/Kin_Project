@@ -94,8 +94,8 @@ class Descriptor:
 
 
     def getHeight(self, frame):
-        if self.getRightLegLong(frame) > 0 and self.getRightArmLong(frame) > 0 and self.getChestLong(frame) > 0 and self.getHeadLong(frame) > 0:
-            return self.getRightLegLong(frame) + self.getRightArmLong(frame) + self.getChestLong(frame) + self.getHeadLong(frame)
+        if self.getRightLegLong(frame) > 0 and self.getChestLong(frame) > 0 and self.getHeadLong(frame) > 0:
+            return self.getRightLegLong(frame) + self.getChestLong(frame) + self.getHeadLong(frame)
         return 0
 
     # TrackingState: NotTracked = 0, Inferred = 1, or Tracked = 2
