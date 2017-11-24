@@ -21,13 +21,15 @@ class Kin:
         self._frames = []
         for frame_i in range(self._infoVideo._frames):
             face = None
+            faceHD = None
             body = None
             if data['face_gallery'][frame_i].size == 1:
                 face = Face.Face(data['face_gallery'][frame_i])
+            if data['HD_face_gallery'][frame_i].size == 1:
+                faceHD = FaceHD.FaceHD(data['HD_face_gallery'][frame_i])
             if data['body_gallery'][frame_i].size == 1:
-                #faceHD = FaceHD.FaceHD(data['HD_face_gallery'][frame_i])
                 body = Body.Body(data['body_gallery'][frame_i])
-            frame = Frame.Frame(face, face, body)
+            frame = Frame.Frame(face, faceHD, body)
             self._frames.append(frame)
 
     def getDescriptors(self):
