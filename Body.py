@@ -1,9 +1,10 @@
 import Point3D
 import numpy as np
+import matplotlib.pyplot as plt
 
 class Body:
     def __init__(self, frame):
-        self._points = self.getPoints(frame)
+        self.getPoints(frame)
         self._leftHandState = self.getLeftHandState(frame)
         self._rightHandState = self.getRightHandState(frame)
 
@@ -12,9 +13,11 @@ class Body:
         positions = self.getPosition(frame)
         orientations = self.getOrientation(frame)
         trackingStates = self.getTrackingState(frame)
-        for i in range(positions.size):
-            point = Point3D.Point3D(positions.item()[i],orientations.item()[i], trackingStates.item()[i])
+
+        for i in range(positions.item().shape[1]):
+            point = Point3D.Point3D(positions.item()[0][i],positions.item()[1][i], positions.item()[2][i])
             self._points.append(point)
+
 
     def getPosition(self, frame):
         return frame['Position']

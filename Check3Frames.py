@@ -11,5 +11,5 @@ class Check3Frames:
             descriptors.append(Descriptor.Descriptor(frame))
         return self.average(descriptors)
 
-    def average(descriptors):
-        #media tra descrittori
+    def average(self, descriptors):
+        return

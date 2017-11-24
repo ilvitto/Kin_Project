@@ -7,6 +7,7 @@ import Frame
 import Face
 import FaceHD
 import Body
+from Check3Frames import Check3Frames
 
 class Kin:
     def __init__(self):
