@@ -1,6 +1,7 @@
 from array import array
 
 import scipy.io as sio
+import scipy.signal as sig
 import numpy as np
 import InfoVideo
 import Frame
@@ -46,9 +47,18 @@ class Kin:
 
         distances1 = []
         distances2 = []
-        for i in range(len(self._frames)):
-            distances1.append(Descriptor(self._frames[i])._shoulderDistance)
-        plt.plot(distances1)
+        for i in range(len(self._frames) - 7):
+            for j in range()
+            distance = Descriptor(self._frames[i]).getLeftLegLong()
+            distances1.append(distance if distance is not None else 0)
+            # distances1.append(Descriptor(self._frames[i]).getHeadLong())
+            # distances2.append(Descriptor(self._frames[i]).getChestLong())
+            # distances4.append(Descriptor(self._frames[i]).getRightLegLong())
+        # plt.plot(np.array(distances1))
+        plt.plot(sig.medfilt(np.array(distances1), 5))
+        plt.plot(sig.medfilt(np.array(distances1), 7))
+        plt.plot(sig.medfilt(np.array(distances1), 9))
+        plt.plot(sig.medfilt(np.array(distances1), 11))
         plt.show()
 
         return descriptors

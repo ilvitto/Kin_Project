@@ -1,6 +1,7 @@
 import Point3D
 import numpy as np
 import matplotlib.pyplot as plt
+from Joint import Joint
 
 class Body:
     def __init__(self, frame):
@@ -19,11 +20,7 @@ class Body:
             orientation = None
             #Point3D.Point3D(positions.item()[0][i],positions.item()[1][i], positions.item()[2][i])
             trackingState = trackingStates.item()[i]
-            self._joints.append({
-                'position' : point,
-                'orientation': orientation,
-                'trackingState' : trackingState
-            })
+            self._joints.append(Joint(point,orientation,trackingState))
 
 
     def getPosition(self, frame):

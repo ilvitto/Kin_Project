@@ -1,111 +1,82 @@
 from matplotlib import pyplot as plt
+from Joint import Joint
 
 class Descriptor:
-    # JointType_SpineBase = 1;
-    # JointType_SpineMid = 2;
-    # JointType_Neck = 3;
-    # JointType_Head = 4;
-    # JointType_ShoulderLeft = 5;
-    # JointType_ElbowLeft = 6;
-    # JointType_WristLeft = 7;
-    # JointType_HandLeft = 8;
-    # JointType_ShoulderRight = 9;
-    # JointType_ElbowRight = 10;
-    # JointType_WristRight = 11;
-    # JointType_HandRight = 12;
-    # JointType_HipLeft = 13;
-    # JointType_KneeLeft = 14;
-    # JointType_AnkleLeft = 15;
-    # JointType_FootLeft = 16;
-    # JointType_HipRight = 17;
-    # JointType_KneeRight = 18;
-    # JointType_AnkleRight = 19;
-    # JointType_FootRight = 20;
-    # JointType_SpineShoulder = 21;
-    # JointType_HandTipLeft = 22;
-    # JointType_ThumbLeft = 23;
-    # JointType_HandTipRight = 24;
-    # JointType_ThumbRight = 25;
-    # JointType_Count = 25;
 
     def __init__(self, frame):
         if(frame._body is not None):
             self._frame = frame
             self._joints = frame._body._joints
-            self._shoulderDistance = self.getShoulderDistance(frame)
-            self._shoulderDistance2 = self.getShoulderDistance2(frame)
-            # self._leftArmLong = self.getLeftArmLong(frame)
-            # self._rightArmLong = self.getRightArmLong(frame)
-            # self._leftLegLong = self.getLeftLegLong(frame)
-            # self._rightLegLong = self.getRightLegLong(frame)
-            # self._height = self.getHeight(frame)
+            self._shoulderDistance = self.getShoulderDistance()
+            self._shoulderDistance2 = self.getDirectShoulderDistance()
+            self._leftArmLong = self.getLeftArmLong()
+            self._rightArmLong = self.getRightArmLong()
+            self._leftLegLong = self.getLeftLegLong()
+            self._rightLegLong = self.getRightLegLong()
+            self._height = self.getHeight()
         else:
             self._frame = None
             self._joints = None
-            self._shoulderDistance = 0
-            self._shoulderDistance2 = 0
-            self._leftArmLong = 0
-            self._rightArmLong = 0
-            self._leftLegLong = 0
-            self._rightLegLong = 0
-            self._height = 0
+            self._shoulderDistance = None
+            self._shoulderDistance2 = None
+            self._leftArmLong = None
+            self._rightArmLong = None
+            self._leftLegLong = None
+            self._rightLegLong = None
+            self._height = None
 
-    def getShoulderDistance(self, frame):
-        if self.isTrackedPoint(frame, 4) and self.isTrackedPoint(frame, 20) and self.isTrackedPoint(frame, 8):
-            return frame._body._joints[4]['position'].distance(frame._body._joints[20]['position']) + frame._body._joints[20]['position'].distance(frame._body._joints[8]['position'])
-        return 0
+    def jointsDistance(self, j1, j2):
+        if self._joints is not None and self._joints[j1].isTracked() and self._joints[j2].isTracked():
+            return self._joints[j1].distance(self._joints[j2])
+        return None
 
-    def getShoulderDistance2(self, frame):
-        if self.isTrackedPoint(frame, 4) and self.isTrackedPoint(frame, 8):
-            return frame._body._joints[4]['position'].distance(frame._body._joints[8]['position'])
-        return 0
+    def getShoulderDistance(self):
+        d1 = self.jointsDistance(Joint.ShoulderLeft, Joint.SpineShoulder)
+        d2 = self.jointsDistance(Joint.ShoulderRight, Joint.SpineShoulder)
+        return d1 + d2 if (d1 is not None and d2 is not None) else None
 
-    # 4->5->6
-    def getLeftArmLong(self, frame):
-        if self.isTrackedPoint(frame, 4) and self.isTrackedPoint(frame, 5) and self.isTrackedPoint(frame, 6):
-            return self.distance(frame._body._joints[4],frame._body._joints[5])+self.distance(frame._body._joints[5],frame._body._joints[6])
-        return 0
+    def getDirectShoulderDistance(self):
+        d1 = self.jointsDistance(Joint.ShoulderLeft, Joint.ShoulderRight)
+        return d1 if (d1 is not None) else None
 
-    #8->9->10
-    def getRightArmLong(self, frame):
-        if self.isTrackedPoint(frame, 8) and self.isTrackedPoint(frame, 9) and self.isTrackedPoint(frame, 10):
-            return self.distance(frame._body._joints[8], frame._body._joints[9]) + self.distance(frame._body._joints[9], frame._body._joints[10])
-        return 0
+    def getLeftArmLong(self):
+        d1 = self.jointsDistance(Joint.ShoulderLeft, Joint.ElbowLeft)
+        d2 = self.jointsDistance(Joint.ElbowLeft, Joint.WristLeft)
+        return d1 + d2 if (d1 is not None and d2 is not None) else None
+
+    def getRightArmLong(self):
+        d1 = self.jointsDistance(Joint.ShoulderRight, Joint.ElbowRight)
+        d2 = self.jointsDistance(Joint.ElbowRight, Joint.WristRight)
+        return d1 + d2 if (d1 is not None and d2 is not None) else None
 
     #12->13->14
-    def getLeftLegLong(self, frame):
-        if self.isTrackedPoint(frame, 12) and self.isTrackedPoint(frame, 13) and self.isTrackedPoint(frame, 14):
-            return self.distance(frame._body._joints[12], frame._body._joints[13]) + self.distance(frame._body._joints[13], frame._body._joints[14])
-        return 0
+    def getLeftLegLong(self):
+        d1 = self.jointsDistance(Joint.HipLeft, Joint.KneeLeft)
+        d2 = self.jointsDistance(Joint.KneeLeft, Joint.AnkleLeft)
+        return d1 + d2 if (d1 is not None and d2 is not None) else None
 
     # 16->17->18
-    def getRightLegLong(self, frame):
-        if self.isTrackedPoint(frame, 16) and self.isTrackedPoint(frame, 17) and self.isTrackedPoint(frame, 18):
-            return self.distance(frame._body._joints[16], frame._body._joints[17]) + self.distance(frame._body._joints[17], frame._body._joints[18])
-        return 0
+    def getRightLegLong(self):
+        d1 = self.jointsDistance(Joint.HipRight, Joint.KneeRight)
+        d2 = self.jointsDistance(Joint.KneeRight, Joint.AnkleRight)
+        return d1 + d2 if (d1 is not None and d2 is not None) else None
 
     # 0->1->20
-    def getChestLong(self, frame):
-        if self.isTrackedPoint(frame, 0) and self.isTrackedPoint(frame, 1) and self.isTrackedPoint(frame, 20):
-            self.distance(frame._body._joints[0], frame._body._joints[1]) + self.distance(frame._body._joints[1], frame._body._joints[20])
-        return 0
+    def getChestLong(self):
+        d1 = self.jointsDistance(Joint.SpineBase, Joint.SpineMid)
+        d2 = self.jointsDistance(Joint.SpineMid, Joint.SpineShoulder)
+        return d1 + d2 if (d1 is not None and d2 is not None) else None
 
     # 20->2->3
-    def getHeadLong(self, frame):
-        if self.isTrackedPoint(frame, 20) and self.isTrackedPoint(frame, 2) and self.isTrackedPoint(frame, 3):
-            self.distance(frame._body._joints[20], frame._body._joints[2]) + self.distance(frame._body._joints[2], frame._body._joints[3])
-        return 0
+    def getHeadLong(self):
+        d1 = self.jointsDistance(Joint.SpineShoulder, Joint.Neck)
+        d2 = self.jointsDistance(Joint.Neck, Joint.Head)
+        return d1 + d2 if (d1 is not None and d2 is not None) else None
 
 
-    def getHeight(self, frame):
-        if self.getRightLegLong(frame) > 0 and self.getChestLong(frame) > 0 and self.getHeadLong(frame) > 0:
-            return self.getRightLegLong(frame) + self.getChestLong(frame) + self.getHeadLong(frame)
-        return 0
-
-    # TrackingState: NotTracked = 0, Inferred = 1, or Tracked = 2
-    def isTrackedPoint(self, frame, i):
-        print frame._body._joints[i]
-        return frame._body._joints[i]['trackingState'] > 1
-
-    def distance(self, p1, p2):
-        return p1.distance(p2)
+    def getHeight(self):
+        head = self.getHeadLong()
+        chest = self.getChestLong()
+        leftLeg = self.getLeftLegLong()
+        rightLeg = self.getRightLegLong()
+        return head + chest + (leftLeg + rightLeg) / 2 if (head is not None and chest is not None and rightLeg is not None and leftLeg is not None) else None
