@@ -31,14 +31,14 @@ class Descriptor:
     def __init__(self, frame):
         if(frame._body is not None):
             self._frame = frame
-            self._joints = frame._body._points
+            self._joints = frame._body._joints
             self._shoulderDistance = self.getShoulderDistance(frame)
             self._shoulderDistance2 = self.getShoulderDistance2(frame)
-            self._leftArmLong = self.getLeftArmLong(frame)
-            self._rightArmLong = self.getRightArmLong(frame)
-            self._leftLegLong = self.getLeftLegLong(frame)
-            self._rightLegLong = self.getRightLegLong(frame)
-            self._height = self.getHeight(frame)
+            # self._leftArmLong = self.getLeftArmLong(frame)
+            # self._rightArmLong = self.getRightArmLong(frame)
+            # self._leftLegLong = self.getLeftLegLong(frame)
+            # self._rightLegLong = self.getRightLegLong(frame)
+            # self._height = self.getHeight(frame)
         else:
             self._frame = None
             self._joints = None
@@ -51,45 +51,49 @@ class Descriptor:
             self._height = 0
 
     def getShoulderDistance(self, frame):
-        return frame._body._points[4].distance(frame._body._points[20]) + frame._body._points[20].distance(frame._body._points[8])
+        if self.isTrackedPoint(frame, 4) and self.isTrackedPoint(frame, 20) and self.isTrackedPoint(frame, 8):
+            return frame._body._joints[4]['position'].distance(frame._body._joints[20]['position']) + frame._body._joints[20]['position'].distance(frame._body._joints[8]['position'])
+        return 0
 
     def getShoulderDistance2(self, frame):
-        return frame._body._points[4].distance(frame._body._points[8])
+        if self.isTrackedPoint(frame, 4) and self.isTrackedPoint(frame, 8):
+            return frame._body._joints[4]['position'].distance(frame._body._joints[8]['position'])
+        return 0
 
     # 4->5->6
     def getLeftArmLong(self, frame):
         if self.isTrackedPoint(frame, 4) and self.isTrackedPoint(frame, 5) and self.isTrackedPoint(frame, 6):
-            return self.distance(frame._body._points[4],frame._body._points[5])+self.distance(frame._body._points[5],frame._body._points[6])
+            return self.distance(frame._body._joints[4],frame._body._joints[5])+self.distance(frame._body._joints[5],frame._body._joints[6])
         return 0
 
     #8->9->10
     def getRightArmLong(self, frame):
         if self.isTrackedPoint(frame, 8) and self.isTrackedPoint(frame, 9) and self.isTrackedPoint(frame, 10):
-            return self.distance(frame._body._points[8], frame._body._points[9]) + self.distance(frame._body._points[9], frame._body._points[10])
+            return self.distance(frame._body._joints[8], frame._body._joints[9]) + self.distance(frame._body._joints[9], frame._body._joints[10])
         return 0
 
     #12->13->14
     def getLeftLegLong(self, frame):
         if self.isTrackedPoint(frame, 12) and self.isTrackedPoint(frame, 13) and self.isTrackedPoint(frame, 14):
-            return self.distance(frame._body._points[12], frame._body._points[13]) + self.distance(frame._body._points[13], frame._body._points[14])
+            return self.distance(frame._body._joints[12], frame._body._joints[13]) + self.distance(frame._body._joints[13], frame._body._joints[14])
         return 0
 
     # 16->17->18
     def getRightLegLong(self, frame):
         if self.isTrackedPoint(frame, 16) and self.isTrackedPoint(frame, 17) and self.isTrackedPoint(frame, 18):
-            return self.distance(frame._body._points[16], frame._body._points[17]) + self.distance(frame._body._points[17], frame._body._points[18])
+            return self.distance(frame._body._joints[16], frame._body._joints[17]) + self.distance(frame._body._joints[17], frame._body._joints[18])
         return 0
 
     # 0->1->20
     def getChestLong(self, frame):
         if self.isTrackedPoint(frame, 0) and self.isTrackedPoint(frame, 1) and self.isTrackedPoint(frame, 20):
-            self.distance(frame._body._points[0], frame._body._points[1]) + self.distance(frame._body._points[1], frame._body._points[20])
+            self.distance(frame._body._joints[0], frame._body._joints[1]) + self.distance(frame._body._joints[1], frame._body._joints[20])
         return 0
 
     # 20->2->3
     def getHeadLong(self, frame):
         if self.isTrackedPoint(frame, 20) and self.isTrackedPoint(frame, 2) and self.isTrackedPoint(frame, 3):
-            self.distance(frame._body._points[20], frame._body._points[2]) + self.distance(frame._body._points[2], frame._body._points[3])
+            self.distance(frame._body._joints[20], frame._body._joints[2]) + self.distance(frame._body._joints[2], frame._body._joints[3])
         return 0
 
 
@@ -100,10 +104,8 @@ class Descriptor:
 
     # TrackingState: NotTracked = 0, Inferred = 1, or Tracked = 2
     def isTrackedPoint(self, frame, i):
-        return frame._body._points[i]._trackingState != 0
-
-    def shoulderDistance(self, frame):
-        return frame._body._points[4].distance(frame._body._points[20]) + frame._body._points[20].distance(frame._body._points[8])
+        print frame._body._joints[i]
+        return frame._body._joints[i]['trackingState'] > 1
 
     def distance(self, p1, p2):
         return p1.distance(p2)
