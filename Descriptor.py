@@ -8,7 +8,7 @@ class Descriptor:
             self._frame = frame
             self._joints = frame._body._joints
             self._shoulderDistance = self.getShoulderDistance()
-            self._shoulderDistance2 = self.getDirectShoulderDistance()
+            self._shoulderDirectDistance = self.getDirectShoulderDistance()
             self._leftArmLong = self.getLeftArmLong()
             self._rightArmLong = self.getRightArmLong()
             self._leftLegLong = self.getLeftLegLong()
@@ -18,7 +18,7 @@ class Descriptor:
             self._frame = None
             self._joints = None
             self._shoulderDistance = None
-            self._shoulderDistance2 = None
+            self._shoulderDirectDistance = None
             self._leftArmLong = None
             self._rightArmLong = None
             self._leftLegLong = None
@@ -80,3 +80,34 @@ class Descriptor:
         leftLeg = self.getLeftLegLong()
         rightLeg = self.getRightLegLong()
         return head + chest + (leftLeg + rightLeg) / 2 if (head is not None and chest is not None and rightLeg is not None and leftLeg is not None) else None
+
+    def showDescriptor(self):
+        if self.isEmpty():
+            print " Empty Descriptor"
+        else:
+            print ""
+            print "     Shoulder distance: ",
+            if self._shoulderDistance is not None:
+                print self._shoulderDistance
+            print "     Shoulder direct distance: ",
+            if self._shoulderDirectDistance is not None:
+                print self._shoulderDirectDistance
+            print "     Left arm long: ",
+            if self._leftArmLong is not None:
+                print self._leftArmLong
+            print "     Right arm long: ",
+            if self._rightArmLong is not None:
+                print self._rightArmLong
+            print "     Left leg long: ",
+            if self._leftLegLong is not None:
+                print self._leftLegLong
+            print "     Right leg long: ",
+            if self._rightLegLong is not None:
+                print self._rightLegLong
+            print "     Height: ",
+            if self._height is not None:
+                print self._height
+
+    def isEmpty(self):
+        return True if self._shoulderDistance is None and self._shoulderDirectDistance is None and self._leftArmLong is None \
+                       and self._rightArmLong is None and self._leftArmLong is None and self._rightArmLong is None and self._height is None else False
