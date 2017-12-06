@@ -17,7 +17,7 @@ class Body:
 
         for i in range(positions.item().shape[1]):
             point = Point3D.Point3D(positions.item()[0][i],positions.item()[1][i], positions.item()[2][i])
-            orientation = None
+            orientation = self.fromQuaternion(orientations.item()[i])
             #Point3D.Point3D(positions.item()[0][i],positions.item()[1][i], positions.item()[2][i])
             trackingState = trackingStates.item()[i]
             self._joints.append(Joint(point,orientation,trackingState))
@@ -37,3 +37,6 @@ class Body:
 
     def getRightHandState(self, frame):
         return frame['RightHandState']
+
+    def fromQuaternion(self, quat):
+        

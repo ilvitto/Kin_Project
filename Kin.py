@@ -38,7 +38,7 @@ class Kin:
 
     def getDescriptors(self):
         descriptors = []
-        blockSize = 5
+        blockSize = 1
         print "Number of frame: " + str(len(self._frames))
         for i in range(blockSize - 1, len(self._frames)):
             frames = []
@@ -52,7 +52,7 @@ class Kin:
         distances1 = []
         distances2 = []
         for i in range(len(self._frames)):
-            distance = Descriptor(self._frames[i]).getLeftLegLong()
+            distance = Descriptor(self._frames[i]).getHeight()
             distances1.append(distance if distance is not None else 0)
             # distances1.append(Descriptor(self._frames[i]).getHeadLong())
             # distances2.append(Descriptor(self._frames[i]).getChestLong())

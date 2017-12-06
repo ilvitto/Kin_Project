@@ -20,3 +20,4 @@ class Point3D:
     def distance(self, other):
         return sqrt(power(self.getX() - other.getX(), 2) + power(self.getY() - other.getY(), 2) + power(
             self.getZ() - other.getZ(), 2))
+

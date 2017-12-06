@@ -8,3 +8,6 @@ class Rect2D:
 
     def getRightBottom(self):
         return self._rb
+
+    def __str__(self):
+        return "[" + str(self._lu) + "," + str(self._rb) + "]"

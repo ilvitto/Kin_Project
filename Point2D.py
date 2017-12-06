@@ -14,3 +14,6 @@ class Point2D:
 
     def distance(self, other):
         return sqrt(power(self.getX() - other.getX(), 2) + power(self.getY() - other.getY(), 2))
+
+    def __str__(self):
+        return "(" + str(self._x) + "," + str(self._y) + ")"
