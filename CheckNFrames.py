@@ -1,6 +1,7 @@
 from Descriptor import Descriptor
 import numpy as np
 
+
 class CheckNFrames:
 
     def __init__(self, frames):
