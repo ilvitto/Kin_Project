@@ -1,3 +1,5 @@
+import numpy as np
+
 class Joint:
     SpineBase = 0
     SpineMid = 1
@@ -35,3 +37,19 @@ class Joint:
 
     def distance(self, joint):
         return self._position.distance(joint._position)
+
+    def getRotation3D(self, q1=None,q2=None,q3=None,q4=None):
+        print self._orientation
+        if(q1 is None and q2 is None and q3 is None and q4 is None):
+
+            q1 = self._orientation[0]
+            q2 = self._orientation[1]
+            q3 = self._orientation[2]
+            q4 = self._orientation[3]
+        q = np.array((q1,q2,q3,q4))
+        yaw = np.arctan2(2 * (q[0] * q[3] - q[1] * q[2]),
+                         1 - 2 * (q[2] ** 2 + q[3] ** 2))
+        pitch = np.arcsin(2 * (q[0] * q[2] + q[3] * q[1]))
+        roll = np.arctan2(2 * (q[0] * q[1] - q[2] * q[3]),
+                          1 - 2 * (q[1] ** 2 + q[2] ** 2))
+        return np.array([yaw, pitch, roll])

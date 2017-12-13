@@ -36,23 +36,28 @@ def show(img):
 
 kin = Kin.Kin()
 kin.load("./dataset/0068/body_and_face.mat")
-# kin.getDescriptors()
+kin.getDescriptors()
 
 blocks = np.zeros(((78-35)*200 * (78-35), 50, 4))
 
-for i in range(35, 78):
-    rgbImage = cv2.imread("./dataset/0068/rgbReg_frames/00" + str(i) + ".jpg")
-    indexImage = cv2.imread("./dataset/0068/bodyIndex_frames/00" + str(i) + ".png")
+for i in range(1, len(kin._frames)):
+    if i < 10:
+        str_i = "000"+str(i)
+    elif i < 100:
+        str_i = "00"+str(i)
+    elif i < 1000:
+        str_i = "0" + str(i)
+    else:
+        str_i = str(i)
+    rgbImage = cv2.imread("./dataset/0068/rgbReg_frames/" + str_i + ".jpg")
+    indexImage = cv2.imread("./dataset/0068/bodyIndex_frames/" + str_i + ".png")
     indexImage = cv2.cvtColor(indexImage, cv2.COLOR_BGR2GRAY)
-    # rgbImage = cv2.cvtColor(rgbImage, cv2.COLOR_BGR2RGB)
+    rgbImage = cv2.cvtColor(rgbImage, cv2.COLOR_BGR2RGB)
 
     ret, mask = cv2.threshold(indexImage, 10, 255, cv2.THRESH_BINARY)
     mask_inv = cv2.bitwise_not(mask)
 
     img2_fg = cv2.bitwise_and(rgbImage, rgbImage, mask=mask_inv)
-    # plt.imshow(img2_fg)
-    # plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
-    # plt.show()
 
     if(kin._frames[i]._face):
         neckPos = kin._frames[i]._face._boundingBox
@@ -68,13 +73,18 @@ for i in range(35, 78):
 
     whiteMaskImg = cv2.bitwise_and(makeMask(whiteMaskImg), mask_inv)
 
-    # show(whiteMaskImg)
+    # show(headImg)
 
     mean = cv2.mean(headImg, mask=whiteMaskImg)
-    print mean
+    if sum(mean) != 0:
 
-    if(kin._frames[i]._body):
-        print kin._frames[i]._body._joints[Joint.Head]._orientation
+        print i, "RGB", mean,
+    else:
+        print i, "None",
+
+    if(kin._frames[i]._faceHD):
+        #print kin._frames[i]._body._joints[Joint.Head]._orientation
+        print "ROT", kin._frames[i]._faceHD._rotation.item()
     else:
         print None
 #     index = i - 35
