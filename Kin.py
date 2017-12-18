@@ -61,7 +61,10 @@ class Kin:
 
         d1 = []
         for descriptor in descriptors:
-            d1.append(descriptor.getShoulderDistance() if descriptor.getShoulderDistance() is not None else 0)
+            if(descriptor._shoulderDistance is not None):
+                d1.append(descriptor._shoulderDistance)
+            else:
+                d1.append(0)
 
         plt.plot(range(0, len(descriptors)), np.array(d1))
         plt.show()
