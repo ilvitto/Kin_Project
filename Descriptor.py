@@ -6,8 +6,8 @@ class Descriptor:
     usedJoints = [Joint.ShoulderLeft, Joint.SpineShoulder, Joint.ShoulderRight, Joint.ElbowLeft, Joint.ElbowRight,
                   Joint.WristLeft, Joint.WristRight]
 
-    def __init__(self, frame):
-        if (frame._body is not None):
+    def __init__(self, frame = None):
+        if(frame is not None and frame._body is not None):
             self._frame = frame
             self._joints = frame._body._joints
             self._shoulderDistance = self.getShoulderDistance()

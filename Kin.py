@@ -56,10 +56,12 @@ class Kin:
                 currentFrames = []
             if len(currentFrames) > 0:
                 descriptors.append(self.processFrames(currentFrames))
+            else:
+                descriptors.append(CheckNFrames()._descriptorMedian)
 
         d1 = []
         for descriptor in descriptors:
-            d1.append(descriptor.getShoulderDistance())
+            d1.append(descriptor.getShoulderDistance() if descriptor.getShoulderDistance() is not None else 0)
 
         plt.plot(range(0, len(descriptors)), np.array(d1))
         plt.show()
