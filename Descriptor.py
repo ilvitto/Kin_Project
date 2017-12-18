@@ -1,10 +1,13 @@
 from matplotlib import pyplot as plt
 from Joint import Joint
 
+
 class Descriptor:
+    usedJoints = [Joint.ShoulderLeft, Joint.SpineShoulder, Joint.ShoulderRight, Joint.ElbowLeft, Joint.ElbowRight,
+                  Joint.WristLeft, Joint.WristRight]
 
     def __init__(self, frame):
-        if(frame._body is not None):
+        if (frame._body is not None):
             self._frame = frame
             self._joints = frame._body._joints
             self._shoulderDistance = self.getShoulderDistance()
@@ -49,7 +52,7 @@ class Descriptor:
         d2 = self.jointsDistance(Joint.ElbowRight, Joint.WristRight)
         return d1 + d2 if (d1 is not None and d2 is not None) else None
 
-    #12->13->14
+    # 12->13->14
     def getLeftLegLong(self):
         d1 = self.jointsDistance(Joint.HipLeft, Joint.KneeLeft)
         d2 = self.jointsDistance(Joint.KneeLeft, Joint.AnkleLeft)
@@ -73,13 +76,13 @@ class Descriptor:
         d2 = self.jointsDistance(Joint.Neck, Joint.Head)
         return d1 + d2 if (d1 is not None and d2 is not None) else None
 
-
     def getHeight(self):
         head = self.getHeadLong()
         chest = self.getChestLong()
         leftLeg = self.getLeftLegLong()
         rightLeg = self.getRightLegLong()
-        return head + chest + (leftLeg + rightLeg) / 2 if (head is not None and chest is not None and rightLeg is not None and leftLeg is not None) else None
+        return head + chest + (leftLeg + rightLeg) / 2 if (
+        head is not None and chest is not None and rightLeg is not None and leftLeg is not None) else None
 
     def showDescriptor(self):
         if self.isEmpty():

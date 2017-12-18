@@ -5,11 +5,11 @@ from Joint import Joint
 
 class Body:
     def __init__(self, frame):
-        self.getJoints(frame)
+        self.assignJoints(frame)
         self._leftHandState = self.getLeftHandState(frame)
         self._rightHandState = self.getRightHandState(frame)
 
-    def getJoints(self, frame):
+    def assignJoints(self, frame):
         self._joints = []
         positions = self.getPosition(frame)
         orientations = self.getOrientation(frame)
@@ -22,6 +22,8 @@ class Body:
             trackingState = trackingStates.item()[i]
             self._joints.append(Joint(point,orientation,trackingState))
 
+    def getJoint(self, j):
+        return self._joints[j]
 
     def getPosition(self, frame):
         return frame['Position']

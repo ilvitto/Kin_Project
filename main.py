@@ -38,55 +38,55 @@ kin = Kin.Kin()
 kin.load("./dataset/0068/body_and_face.mat")
 kin.getDescriptors()
 
-blocks = np.zeros(((78-35)*200 * (78-35), 50, 4))
-
-for i in range(1, len(kin._frames)):
-    if i < 10:
-        str_i = "000"+str(i)
-    elif i < 100:
-        str_i = "00"+str(i)
-    elif i < 1000:
-        str_i = "0" + str(i)
-    else:
-        str_i = str(i)
-    rgbImage = cv2.imread("./dataset/0068/rgbReg_frames/" + str_i + ".jpg")
-    indexImage = cv2.imread("./dataset/0068/bodyIndex_frames/" + str_i + ".png")
-    indexImage = cv2.cvtColor(indexImage, cv2.COLOR_BGR2GRAY)
-    rgbImage = cv2.cvtColor(rgbImage, cv2.COLOR_BGR2RGB)
-
-    ret, mask = cv2.threshold(indexImage, 10, 255, cv2.THRESH_BINARY)
-    mask_inv = cv2.bitwise_not(mask)
-
-    img2_fg = cv2.bitwise_and(rgbImage, rgbImage, mask=mask_inv)
-
-    if(kin._frames[i]._face):
-        neckPos = kin._frames[i]._face._boundingBox
-    else:
-        neckPos = Rect2D(Point2D(0,0), Point2D(0,0))
-
-    headImg = crop(img2_fg, neckPos)
-
-    whiteMaskImg = crop(whiteImage(headImg), neckPos)
-
-    # show(whiteMaskImg)
-    # show(mask_inv)
-
-    whiteMaskImg = cv2.bitwise_and(makeMask(whiteMaskImg), mask_inv)
-
-    # show(headImg)
-
-    mean = cv2.mean(headImg, mask=whiteMaskImg)
-    if sum(mean) != 0:
-
-        print i, "RGB", mean,
-    else:
-        print i, "None",
-
-    if(kin._frames[i]._faceHD):
-        #print kin._frames[i]._body._joints[Joint.Head]._orientation
-        print "ROT", kin._frames[i]._faceHD._rotation.item()
-    else:
-        print None
+# blocks = np.zeros(((78-35)*200 * (78-35), 50, 4))
+#
+# for i in range(1, len(kin._frames)):
+#     if i < 10:
+#         str_i = "000"+str(i)
+#     elif i < 100:
+#         str_i = "00"+str(i)
+#     elif i < 1000:
+#         str_i = "0" + str(i)
+#     else:
+#         str_i = str(i)
+#     rgbImage = cv2.imread("./dataset/0068/rgbReg_frames/" + str_i + ".jpg")
+#     indexImage = cv2.imread("./dataset/0068/bodyIndex_frames/" + str_i + ".png")
+#     indexImage = cv2.cvtColor(indexImage, cv2.COLOR_BGR2GRAY)
+#     rgbImage = cv2.cvtColor(rgbImage, cv2.COLOR_BGR2RGB)
+#
+#     ret, mask = cv2.threshold(indexImage, 10, 255, cv2.THRESH_BINARY)
+#     mask_inv = cv2.bitwise_not(mask)
+#
+#     img2_fg = cv2.bitwise_and(rgbImage, rgbImage, mask=mask_inv)
+#
+#     if(kin._frames[i]._face):
+#         neckPos = kin._frames[i]._face._boundingBox
+#     else:
+#         neckPos = Rect2D(Point2D(0,0), Point2D(0,0))
+#
+#     headImg = crop(img2_fg, neckPos)
+#
+#     whiteMaskImg = crop(whiteImage(headImg), neckPos)
+#
+#     # show(whiteMaskImg)
+#     # show(mask_inv)
+#
+#     whiteMaskImg = cv2.bitwise_and(makeMask(whiteMaskImg), mask_inv)
+#
+#     # show(headImg)
+#
+#     mean = cv2.mean(headImg, mask=whiteMaskImg)
+#     if sum(mean) != 0:
+#
+#         print i, "RGB", mean,
+#     else:
+#         print i, "None",
+#
+#     if(kin._frames[i]._faceHD):
+#         #print kin._frames[i]._body._joints[Joint.Head]._orientation
+#         print "ROT", kin._frames[i]._faceHD._rotation.item()
+#     else:
+#         print None
 #     index = i - 35
 #     blocks[index*200:(index+1)*200, 0:200] = mean
 #

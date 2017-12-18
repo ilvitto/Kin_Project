@@ -12,6 +12,7 @@ from Joint import Joint
 from CheckNFrames import CheckNFrames
 from Descriptor import Descriptor
 from matplotlib import pyplot as plt
+import math
 
 class Kin:
     def __init__(self):
@@ -43,45 +44,28 @@ class Kin:
         blockSize = 5
         print "Number of frame: " + str(len(self._frames))
         print "Block size: " + str(blockSize) + "\n"
-        for i in range(blockSize - 1, len(self._frames)):
-            frames = []
-            for j in range(i - blockSize + 1, i+1):
-                frames.append(self._frames[j])
-            descriptorAvg = CheckNFrames(frames)._descriptorAvg
-            descriptorMedian = CheckNFrames(frames)._descriptorMedian
-            descriptorsAvg.append(descriptorAvg)
-            descriptorsMedian.append(descriptorMedian)
-            print "Overlap #"+str(i)+": "
-            print "Average: ",
-            descriptorAvg.showDescriptor()
-            print "Median: ",
-            descriptorMedian.showDescriptor()
-            print "orientation:",
-            if Descriptor(self._frames[i])._joints is not None:
-                print Descriptor(self._frames[i])._joints[Joint.ShoulderLeft].getRotation3D(),
-                print Descriptor(self._frames[i])._joints[Joint.ShoulderRight].getRotation3D(),
 
-        distances1 = []
-        distances2 = []
-        distances3 = []
-        print "Starting plotting: "
-        print len(descriptorsAvg),len(descriptorsMedian), len(self._frames)
+        descriptors = []
+        currentFrames = []
+        for frame in self._frames:
+            if frame.isGood(Descriptor.usedJoints):
+                currentFrames.append(frame)
+            else:
+                if len(currentFrames) > 0:
+                    print "--> Descriptor size: " + str(len(currentFrames)) + " <--"
+                currentFrames = []
+            if len(currentFrames) > 0:
+                descriptors.append(self.processFrames(currentFrames))
 
-        for i in range(len(self._frames) - blockSize + 1):
-            distance = descriptorsAvg[i]._shoulderDistance
-            distance2 = descriptorsMedian[i]._shoulderDistance
-            distance3 = Descriptor(self._frames[i])._shoulderDistance
+        d1 = []
+        for descriptor in descriptors:
+            d1.append(descriptor.getShoulderDistance())
 
-            distances1.append(distance if distance is not None else 0)
-            distances2.append(distance2 if distance2 is not None else 0)
-            distances3.append(distance3 if distance3 is not None else 0)
-            # distances2.append(Descriptor(self._frames[i]).getChestLong())
-            # distances4.append(Descriptor(self._frames[i]).getRightLegLong())
-
-        # plt.plot(np.array(distances1))
-        plt.plot(range(0,len(self._frames) - blockSize + 1),sig.medfilt(np.array(distances1), 9),range(0,len(self._frames) - blockSize + 1),sig.medfilt(np.array(distances2), 9),range(0,len(self._frames) - blockSize + 1),sig.medfilt(np.array(distances3), 9))
-
-        # plt.plot(sig.medfilt(np.array(distances2), 9))
+        plt.plot(range(0, len(descriptors)), np.array(d1))
         plt.show()
 
-        return descriptorsAvg, descriptorMedian
+
+
+    def processFrames(self, frames):
+        return CheckNFrames(frames)._descriptorMedian
+
