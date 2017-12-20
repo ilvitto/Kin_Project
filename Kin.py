@@ -54,13 +54,14 @@ class Kin:
             else:
                 descriptors.append(CheckNFrames()._descriptorMedian)
                 if not frame.isGood(Descriptor.usedJoints):
-                    print "> " + str(len(currentFrames)) + " <"
+                    if len(currentFrames) > 0:
+                        print "> " + str(len(currentFrames)) + " <"
                     currentFrames = []
 
         d1 = []
         for descriptor in descriptors:
-            if(descriptor._leftArmLong is not None):
-                d1.append(descriptor._leftArmLong)
+            if(descriptor._clavicleLeft is not None):
+                d1.append(descriptor._clavicleLeft)
             else:
                 d1.append(0)
 

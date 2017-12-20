@@ -3,11 +3,13 @@ from Joint import Joint
 
 
 class Descriptor:
-    usedJoints = [Joint.ShoulderLeft, Joint.SpineShoulder, Joint.ShoulderRight, Joint.ElbowLeft, Joint.ElbowRight,
-                  Joint.WristLeft, Joint.WristRight]
+    usedJoints = [Joint.ShoulderLeft, Joint.SpineShoulder, Joint.SpineMid, Joint.SpineBase, Joint.ShoulderRight,
+                  Joint.ElbowLeft, Joint.ElbowRight,
+                  Joint.WristLeft, Joint.WristRight, Joint.Head, Joint.Neck, Joint.HipLeft, Joint.HipRight,
+                  Joint.KneeLeft, Joint.KneeRight, Joint.AnkleLeft, Joint.AnkleRight, Joint.Neck]
 
-    def __init__(self, frame = None):
-        if(frame is not None and frame._body is not None):
+    def __init__(self, frame=None):
+        if (frame is not None and frame._body is not None):
             self._frame = frame
             self._joints = frame._body._joints
             self._shoulderDistance = self.getShoulderDistance()
@@ -17,6 +19,9 @@ class Descriptor:
             self._leftLegLong = self.getLeftLegLong()
             self._rightLegLong = self.getRightLegLong()
             self._height = self.getHeight()
+
+            self._clavicleLeft = self.getClavicleLeft()
+            self._clavicleRight = self.getClavicleRight()
         else:
             self._frame = None
             self._joints = None
@@ -27,6 +32,9 @@ class Descriptor:
             self._leftLegLong = None
             self._rightLegLong = None
             self._height = None
+
+            self._clavicleLeft = None
+            self._clavicleRight = None
 
     def jointsDistance(self, j1, j2):
         if self._joints is not None and self._joints[j1].isTracked() and self._joints[j2].isTracked():
@@ -76,13 +84,19 @@ class Descriptor:
         d2 = self.jointsDistance(Joint.Neck, Joint.Head)
         return d1 + d2 if (d1 is not None and d2 is not None) else None
 
+    def getClavicleLeft(self):
+        return self.jointsDistance(Joint.ShoulderLeft, Joint.Neck)
+
+    def getClavicleRight(self):
+        return self.jointsDistance(Joint.ShoulderRight, Joint.Neck)
+
     def getHeight(self):
         head = self.getHeadLong()
         chest = self.getChestLong()
         leftLeg = self.getLeftLegLong()
         rightLeg = self.getRightLegLong()
         return head + chest + (leftLeg + rightLeg) / 2 if (
-        head is not None and chest is not None and rightLeg is not None and leftLeg is not None) else None
+            head is not None and chest is not None and rightLeg is not None and leftLeg is not None) else None
 
     def showDescriptor(self):
         if self.isEmpty():

@@ -18,6 +18,14 @@ class Frame:
         for j in usedJoints:
             if not self._body.getJoint(j).isTracked():
                 return False
+        return True
+
+    def isVeryGood(self, usedJoints):
+        shoulderLeftThreshold = 20
+        shoulderRightThreshold = 20
+        if not self.isGood(usedJoints):
+            return False
+
         if np.abs(self._body.getJoint(Joint.ShoulderLeft)._orientation[1]) > shoulderLeftThreshold or \
                         np.abs(self._body.getJoint(Joint.ShoulderRight)._orientation[1]) > shoulderRightThreshold:
             return False
