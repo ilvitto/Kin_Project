@@ -14,6 +14,7 @@ from Descriptor import Descriptor
 from matplotlib import pyplot as plt
 import math
 
+
 class Kin:
     def __init__(self):
         self._infoVideo = None
@@ -47,29 +48,36 @@ class Kin:
 
         descriptors = []
         currentFrames = []
+        updated = False
         for frame in self._frames:
             if frame.isVeryGood(Descriptor.usedJoints):
                 currentFrames.append(frame)
-                descriptors.append(self.processFrames(currentFrames))
-            else:
-                descriptors.append(CheckNFrames()._descriptorMedian)
-                if not frame.isGood(Descriptor.usedJoints):
-                    if len(currentFrames) > 0:
-                        print "> " + str(len(currentFrames)) + " <"
-                    currentFrames = []
+                updated = True
+            elif not frame.isGood(Descriptor.usedJoints):
+                if len(currentFrames) > 0 and updated:
+                    descriptors.append(self.processFrames(currentFrames))
+                    updated = False
+                else:
+                    descriptors.append(CheckNFrames()._descriptorMedian)
+                currentFrames = []
 
         d1 = []
+        d2 = []
         for descriptor in descriptors:
-            if(descriptor._clavicleLeft is not None):
-                d1.append(descriptor._clavicleLeft)
+            if descriptor._shoulderDistance is not None and descriptor._leftLegLong is not None and descriptor._rightLegLong is not None:
+                d1.append(descriptor._shoulderDistance / (np.mean([descriptor._leftLegLong, descriptor._rightLegLong])))
             else:
                 d1.append(0)
 
+            if (descriptor._shoulderDistance is not None):
+                d2.append(
+                    descriptor._shoulderDistance)
+            else:
+                d2.append(0)
+
         plt.plot(range(0, len(descriptors)), np.array(d1))
+        plt.plot(range(0, len(descriptors)), np.array(d2))
         plt.show()
-
-
 
     def processFrames(self, frames):
         return CheckNFrames(frames)._descriptorMedian
-
