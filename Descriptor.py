@@ -128,3 +128,8 @@ class Descriptor:
     def isEmpty(self):
         return True if self._shoulderDistance is None and self._shoulderDirectDistance is None and self._leftArmLong is None \
                        and self._rightArmLong is None and self._leftArmLong is None and self._rightArmLong is None and self._height is None else False
+
+    #_shoulderDistance, _shoulderDirectDistance, _leftArmLong, _rightArmLong, _leftLegLong, _rightLegLong, _height, _clavicleLeft, _clavicleRight
+    def getFeatures(self):
+        return [self._shoulderDistance, self._leftArmLong, self._rightArmLong\
+            , self._leftLegLong, self._rightLegLong, self._height, self._clavicleLeft, self._clavicleRight]

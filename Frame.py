@@ -11,8 +11,6 @@ class Frame:
         return self._body
 
     def isGood(self, usedJoints):
-        shoulderLeftThreshold = 20
-        shoulderRightThreshold = 20
         if self._body is None:
             return False
         for j in usedJoints:

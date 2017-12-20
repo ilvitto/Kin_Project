@@ -14,6 +14,8 @@ from Descriptor import Descriptor
 from matplotlib import pyplot as plt
 import math
 
+import sklearn.cluster as cluster
+from sklearn.cluster import KMeans
 
 class Kin:
     def __init__(self):
@@ -57,27 +59,52 @@ class Kin:
                 if len(currentFrames) > 0 and updated:
                     descriptors.append(self.processFrames(currentFrames))
                     updated = False
-                else:
-                    descriptors.append(CheckNFrames()._descriptorMedian)
+                # else:
+                #     descriptors.append(CheckNFrames()._descriptorMedian)
                 currentFrames = []
 
-        d1 = []
-        d2 = []
-        for descriptor in descriptors:
-            if descriptor._shoulderDistance is not None and descriptor._leftLegLong is not None and descriptor._rightLegLong is not None:
-                d1.append(descriptor._shoulderDistance / (np.mean([descriptor._leftLegLong, descriptor._rightLegLong])))
-            else:
-                d1.append(0)
+        #max_number_of_people = len(descriptors)
 
-            if (descriptor._shoulderDistance is not None):
-                d2.append(
-                    descriptor._shoulderDistance)
-            else:
-                d2.append(0)
+        #classify the number of people
+        classification = self.classify_people(descriptors)
 
-        plt.plot(range(0, len(descriptors)), np.array(d1))
-        plt.plot(range(0, len(descriptors)), np.array(d2))
-        plt.show()
+        print classification.cluster_centers_
+        print classification.labels_
+
+        #compute centroids of clusters
+        people = classification.cluster_centers_
+
+        #self.plot_feature(descriptors)
+        self.save_people(filename="learned_people.txt", people=people)
+
 
     def processFrames(self, frames):
         return CheckNFrames(frames)._descriptorMedian
+
+    def classify_people(self, descriptors):
+        # apply k-means/hierarchical/.. etc to choose k = 1 to max_number_of_people=len(descriptors) and classify
+        people = []
+        X = []
+        for i in range(len(descriptors)):
+            X.append(descriptors[i].getFeatures())
+        classification = KMeans(n_clusters=2, random_state=0).fit(X)
+        #classification = cluster.MeanShift().fit(X)
+        return classification
+
+    def plot_feature(self, descriptors):
+        d1 = []
+        for descriptor in descriptors:
+            if descriptor._shoulderDistance is not None:
+                d1.append(descriptor._shoulderDistance)
+            else:
+                d1.append(0)
+
+        plt.plot(range(0, len(descriptors)), np.array(d1))
+        plt.show()
+
+    def save_people(self, filename, people):
+        output = file(filename, "w")
+        for person in people:
+            output.write(person)
+            output.write("\n")
+        output.close()
