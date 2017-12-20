@@ -48,21 +48,19 @@ class Kin:
         descriptors = []
         currentFrames = []
         for frame in self._frames:
-            if frame.isGood(Descriptor.usedJoints):
+            if frame.isVeryGood(Descriptor.usedJoints):
                 currentFrames.append(frame)
-            else:
-                if len(currentFrames) > 0:
-                    print "--> Descriptor size: " + str(len(currentFrames)) + " <--"
-                currentFrames = []
-            if len(currentFrames) > 0:
                 descriptors.append(self.processFrames(currentFrames))
             else:
                 descriptors.append(CheckNFrames()._descriptorMedian)
+                if not frame.isGood(Descriptor.usedJoints):
+                    print "> " + str(len(currentFrames)) + " <"
+                    currentFrames = []
 
         d1 = []
         for descriptor in descriptors:
-            if(descriptor._shoulderDistance is not None):
-                d1.append(descriptor._shoulderDistance)
+            if(descriptor._leftArmLong is not None):
+                d1.append(descriptor._leftArmLong)
             else:
                 d1.append(0)
 
