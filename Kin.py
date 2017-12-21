@@ -1,5 +1,6 @@
 from array import array
 
+import scipy
 import scipy.io as sio
 import scipy.signal as sig
 import numpy as np
@@ -68,6 +69,7 @@ class Kin:
         #classify the number of people
         classification = self.classify_people(descriptors)
 
+
         print classification.cluster_centers_
         print classification.labels_
 
@@ -87,9 +89,31 @@ class Kin:
         X = []
         for i in range(len(descriptors)):
             X.append(descriptors[i].getFeatures())
-        classification = KMeans(n_clusters=2, random_state=0).fit(X)
+        best_n_cluster = 0
+        best_error = -1
+        for i in range(len(descriptors)):
+            classification = KMeans(n_clusters=i+1, random_state=0).fit(X)
+            error = self.intraClusterDistance(classification, X)
+            print error
+            if(best_error == -1):
+                best_error = error
+                best_classification = classification
+            elif(error < best_error):
+                best_error = error
+                best_classification = classification
         #classification = cluster.MeanShift().fit(X)
-        return classification
+        return best_classification
+
+    def intraClusterDistance(self, classification, X):
+        error = 0
+        max_error = 0
+        for k in range(len(classification.cluster_centers_)):
+            for i, x in enumerate(X):
+                if(classification.labels_[i] == k):
+                    error = np.amax([scipy.spatial.distance.euclidean(x, classification.cluster_centers_[k]), error])
+            max_error = np.amax([error, max_error])
+
+        return max_error
 
     def plot_feature(self, descriptors):
         d1 = []
