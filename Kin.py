@@ -89,20 +89,31 @@ class Kin:
         X = []
         for i in range(len(descriptors)):
             X.append(descriptors[i].getFeatures())
-        best_n_cluster = 0
-        best_error = -1
+
+        errors = []
+        classifications = []
         for i in range(len(descriptors)):
             classification = KMeans(n_clusters=i+1, random_state=0).fit(X)
+            # classification = cluster.MeanShift().fit(X)
             error = self.intraClusterDistance(classification, X)
-            print error
-            if(best_error == -1):
-                best_error = error
-                best_classification = classification
-            elif(error < best_error):
-                best_error = error
-                best_classification = classification
-        #classification = cluster.MeanShift().fit(X)
-        return best_classification
+            classifications.append(classification)
+            errors.append(error)
+
+        errorsPerCent = []
+        for error in errors:
+            errorsPerCent.append((max(errors) - error) / (max(errors) - min(errors)) * 100)
+            #print (error - min(errors)) / (max(errors) - min(errors)) * 100
+        found = False
+        for i in range(1,len(errorsPerCent)):
+            if errorsPerCent[i]-errorsPerCent[i-1] > 15:
+                found = True
+            if found and errorsPerCent[i]-errorsPerCent[i-1] < 15:
+                best = i-1
+                break
+        print best
+        plt.plot(range(0, len(errors)), np.array(errorsPerCent))
+        plt.show()
+        return classifications[best-1]
 
     def intraClusterDistance(self, classification, X):
         error = 0
