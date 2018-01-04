@@ -103,6 +103,8 @@ class Kin:
         for error in errors:
             errorsPerCent.append((max(errors) - error) / (max(errors) - min(errors)) * 100)
 
+        #TODO: choose the elbow GAP
+        #TODO: SUPERVISED SAVED RESULTS 
         found = False
         threshold = 15 #DA SISTEMARE
         best = 1
