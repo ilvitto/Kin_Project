@@ -20,7 +20,7 @@ class CheckNFrames:
         for frame in frames:
             descriptors.append(Descriptor(frame))
         return self.median(descriptors)
-
+        #return Descriptor(frames[-1])
     # def average(self, descriptors):
     #     shoulderDistances = []
     #     shoulderDirectDistances = []
@@ -56,6 +56,7 @@ class CheckNFrames:
         heights = []
         clLefts = []
         clRights = []
+        chestColor = []
         descriptor = Descriptor()
         for descr in descriptors:
             shoulderDistances.append(descr._shoulderDistance) if descr._shoulderDistance is not None else None
@@ -68,6 +69,7 @@ class CheckNFrames:
             heights.append(descr._height) if descr._height is not None else None
             clLefts.append(descr._clavicleLeft) if descr._clavicleLeft is not None else None
             clRights.append(descr._clavicleRight) if descr._clavicleRight is not None else None
+            chestColor.append(descr._chestColor) if descr._chestColor is not None else None
         descriptor._shoulderDistance = np.median(shoulderDistances) if len(shoulderDistances) > 0 else None
         descriptor._leftArmLong = np.median(leftArmLongs) if len(leftArmLongs) > 0 else None
         descriptor._rightArmLong = np.median(rightArmLongs) if len(rightArmLongs) > 0 else None
@@ -76,4 +78,5 @@ class CheckNFrames:
         descriptor._height = np.median(heights) if len(heights) > 0 else None
         descriptor._clavicleLeft = np.median(clLefts) if len(clLefts) > 0 else None
         descriptor._clavicleRight = np.median(clRights) if len(clRights) > 0 else None
+        descriptor._chestColor = np.mean(chestColor, axis=(0)) if len(chestColor) > 0 else None
         return descriptor

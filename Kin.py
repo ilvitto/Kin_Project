@@ -39,7 +39,7 @@ class Kin:
                 faceHD = FaceHD(data['HD_face_gallery'][frame_i])
             if data['body_gallery'][frame_i].size == 1:
                 body = Body(data['body_gallery'][frame_i])
-            frame = Frame(face, faceHD, body)
+            frame = Frame(face, faceHD, body, frame_i)
             self._frames.append(frame)
 
     def getDescriptors(self):
@@ -55,6 +55,8 @@ class Kin:
         for frame in self._frames:
             if frame.isVeryGood(Descriptor.usedJoints):
                 currentFrames.append(frame)
+                temporaryDescriptor = self.processFrames(currentFrames)
+                classification = self.classify_people(descriptors + [temporaryDescriptor])
                 updated = True
             elif not frame.isGood(Descriptor.usedJoints):
                 if len(currentFrames) > 0 and updated:
@@ -63,8 +65,6 @@ class Kin:
                 # else:
                 #     descriptors.append(CheckNFrames()._descriptorMedian)
                 currentFrames = []
-
-        #max_number_of_people = len(descriptors)
 
         #classify the number of people
         classification = self.classify_people(descriptors)
@@ -102,19 +102,23 @@ class Kin:
         errorsPerCent = []
         for error in errors:
             errorsPerCent.append((max(errors) - error) / (max(errors) - min(errors)) * 100)
-            #print (error - min(errors)) / (max(errors) - min(errors)) * 100
+
         found = False
+        threshold = 15 #DA SISTEMARE
+        best = 1
         for i in range(1,len(errorsPerCent)):
-            if errorsPerCent[i]-errorsPerCent[i-1] > 15:
+            if errorsPerCent[i]-errorsPerCent[i-1] > threshold:
                 found = True
-            if found and errorsPerCent[i]-errorsPerCent[i-1] < 15:
-                best = i-1
+            if found and errorsPerCent[i]-errorsPerCent[i-1] < threshold:
+                best = i
                 break
         print best
-        plt.plot(range(0, len(errors)), np.array(errorsPerCent))
-        plt.show()
+        print classifications[best-1].labels_
+        # plt.plot(range(1, len(errors)+1), np.array(errorsPerCent))
+        # plt.show()
         return classifications[best-1]
 
+    #TODO: intracluster distance for all
     def intraClusterDistance(self, classification, X):
         error = 0
         max_error = 0

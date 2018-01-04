@@ -1,6 +1,7 @@
 from matplotlib import pyplot as plt
 from Joint import Joint
-
+import cv2
+import numpy as np
 
 class Descriptor:
     usedJoints = [Joint.ShoulderLeft, Joint.SpineShoulder, Joint.SpineMid, Joint.SpineBase, Joint.ShoulderRight,
@@ -22,6 +23,8 @@ class Descriptor:
 
             self._clavicleLeft = self.getClavicleLeft()
             self._clavicleRight = self.getClavicleRight()
+
+            self._chestColor = self.getChestColor()
         else:
             self._frame = None
             self._joints = None
@@ -35,6 +38,8 @@ class Descriptor:
 
             self._clavicleLeft = None
             self._clavicleRight = None
+
+            self._chestColor = None
 
     def jointsDistance(self, j1, j2):
         if self._joints is not None and self._joints[j1].isTracked() and self._joints[j2].isTracked():
@@ -98,6 +103,31 @@ class Descriptor:
         return head + chest + (leftLeg + rightLeg) / 2 if (
             head is not None and chest is not None and rightLeg is not None and leftLeg is not None) else None
 
+    def getChestColor(self):
+        if self._joints is not None and self._joints[Joint.SpineMid].isTracked():
+            if self._frame._frame_number < 10:
+                str_frame_number = "000"+str(self._frame._frame_number)
+            elif self._frame._frame_number < 100:
+                str_frame_number = "00" + str(self._frame._frame_number)
+            elif self._frame._frame_number < 1000:
+                str_frame_number = "0" + str(self._frame._frame_number)
+            else:
+                str_frame_number = str(self._frame._frame_number)
+
+            rgbImage = cv2.imread('./dataset/0068/rgbReg_frames/'+str_frame_number+'.jpg')
+            indexImage = cv2.imread("./dataset/0068/bodyIndex_frames/" + str_frame_number + ".png")
+            indexImage = cv2.cvtColor(indexImage, cv2.COLOR_BGR2GRAY)
+            rgbImage = cv2.cvtColor(rgbImage, cv2.COLOR_BGR2RGB)
+
+            ret, mask = cv2.threshold(indexImage, 10, 255, cv2.THRESH_BINARY)
+            mask_inv = cv2.bitwise_not(mask)
+
+            img2_fg = cv2.bitwise_and(rgbImage, rgbImage, mask=mask_inv)
+
+            (r,g,b,_) = cv2.mean(img2_fg, mask=mask_inv)
+
+        return (r,g,b)
+
     def showDescriptor(self):
         if self.isEmpty():
             print " Empty Descriptor"
@@ -132,4 +162,4 @@ class Descriptor:
     #_shoulderDistance, _shoulderDirectDistance, _leftArmLong, _rightArmLong, _leftLegLong, _rightLegLong, _height, _clavicleLeft, _clavicleRight
     def getFeatures(self):
         return [self._shoulderDistance, self._leftArmLong, self._rightArmLong\
-            , self._leftLegLong, self._rightLegLong, self._height, self._clavicleLeft, self._clavicleRight]
+            , self._leftLegLong, self._rightLegLong, self._height, self._clavicleLeft, self._clavicleRight, self._chestColor[0], self._chestColor[1], self._chestColor[2]]

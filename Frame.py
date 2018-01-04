@@ -2,10 +2,11 @@ from Joint import Joint
 import numpy as np
 
 class Frame:
-    def __init__(self, face=None, faceHD=None, body=None):
+    def __init__(self, face=None, faceHD=None, body=None, frame_number=None):
         self._face = face
         self._faceHD = faceHD
         self._body = body
+        self._frame_number = frame_number
 
     def getBody(self):
         return self._body
