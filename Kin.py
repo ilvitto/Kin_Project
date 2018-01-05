@@ -116,7 +116,7 @@ class Kin:
         for i in range(len(descriptors)):
             classification = KMeans(n_clusters=i + 1, random_state=0).fit(X)
             # classification = cluster.MeanShift().fit(X)
-            error = self.intraClusterDistance(classification, X)
+            error = self.intraClusterDistanceCentroids(classification, X)
             classifications.append(classification)
             errors.append(error)
 
