@@ -1,5 +1,6 @@
 from array import array
 
+import time
 import scipy
 import scipy.io as sio
 import scipy.signal as sig
@@ -14,9 +15,11 @@ from CheckNFrames import CheckNFrames
 from Descriptor import Descriptor
 from matplotlib import pyplot as plt
 import math
+from gap import gap
 
 import sklearn.cluster as cluster
 from sklearn.cluster import KMeans
+
 
 class Kin:
     def __init__(self):
@@ -66,9 +69,7 @@ class Kin:
                 #     descriptors.append(CheckNFrames()._descriptorMedian)
                 currentFrames = []
 
-        self.plot_feature(descriptors)
-
-        #classify the number of people
+        # classify the number of people
         classification = self.classify_people(descriptors)
 
 
@@ -88,16 +89,18 @@ class Kin:
     def classify_people(self, descriptors):
         # apply k-means/hierarchical/.. etc to choose k = 1 to max_number_of_people=len(descriptors) and classify
         people = []
-        X = []
-        for i in range(len(descriptors)):
-            X.append(descriptors[i].getFeatures())
+        X = np.stack(descriptors[i].getFeatures() for i in range(len(descriptors)))
+
+        # gaps, s_k, K = gap.gap_statistic(X, refs=None, B=10, K=range(1, len(descriptors) + 1), N_init=10)
+        # bestKValue = gap.find_optimal_k(gaps, s_k, K)
+        # print "Optimal K -> ", bestKValue
 
         errors = []
         classifications = []
         for i in range(len(descriptors)):
-            classification = KMeans(n_clusters=i+1, random_state=0).fit(X)
+            classification = KMeans(n_clusters=i + 1, random_state=0).fit(X)
             # classification = cluster.MeanShift().fit(X)
-            error = self.intraClusterDistanceAll(classification, X)
+            error = self.intraClusterDistance(classification, X)
             classifications.append(classification)
             errors.append(error)
 
@@ -105,8 +108,9 @@ class Kin:
         for error in errors:
             errorsPerCent.append((max(errors) - error) / (max(errors) - min(errors)) * 100)
 
-        #TODO: choose the elbow GAP
-        #TODO: SUPERVISED SAVED RESULTS
+        classification = KMeans(n_clusters=bestKValue, random_state=0).fit(X)
+
+        # TODO: SUPERVISED SAVED RESULTS
         found = False
         threshold = 15 #DA SISTEMARE
         best = 1
