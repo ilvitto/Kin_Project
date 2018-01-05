@@ -53,24 +53,40 @@ class Kin:
         print "Block size: " + str(blockSize) + "\n"
 
         descriptors = []
+
         currentFrames = []
         updated = False
-        for frame in self._frames:
+
+        needNewBlock = True
+        blocks = 0
+
+        for i, frame in enumerate(self._frames):
+            # print i + 1, " of ", len(self._frames)
             if frame.isVeryGood(Descriptor.usedJoints):
+                if(needNewBlock):
+                    needNewBlock = False
+                    blocks += 1
                 currentFrames.append(frame)
-                temporaryDescriptor = self.processFrames(currentFrames)
-                classification = self.classify_people(descriptors + [temporaryDescriptor])
+                # temporaryDescriptor = self.processFrames(currentFrames)
+                # classification = self.classify_people(allDescriptors, blocks)
+                # classification = self.classify_people(descriptors + [temporaryDescriptor], blocks)
                 updated = True
             elif not frame.isGood(Descriptor.usedJoints):
                 if len(currentFrames) > 0 and updated:
                     descriptors.append(self.processFrames(currentFrames))
+                    print "Classifying..."
+                    classification = self.classify_people(descriptors, blocks)
+                    print "...Classified"
                     updated = False
                 # else:
                 #     descriptors.append(CheckNFrames()._descriptorMedian)
                 currentFrames = []
+                needNewBlock = True
+
+        # self.plot_feature(allDescriptors)
 
         # classify the number of people
-        classification = self.classify_people(descriptors)
+        classification = self.classify_people(descriptors, blocks - 1)
 
         print classification.cluster_centers_
         print classification.labels_
@@ -84,16 +100,14 @@ class Kin:
     def processFrames(self, frames):
         return CheckNFrames(frames)._descriptorMedian
 
-    def classify_people(self, descriptors):
+    def classify_people(self, descriptors, clustersNumber):
         people = []
         X = np.stack(descriptors[i].getFeatures() for i in range(len(descriptors)))
 
-        gaps, s_k, K = gap.gap_statistic(X, refs=None, B=10, K=range(1, len(descriptors) + 1), N_init=10)
+        print "Finding best K..."
+        gaps, s_k, K = gap.gap_statistic(X, refs=None, B=10, K=range(1, clustersNumber + 1), N_init=10)
         bestKValue = gap.find_optimal_k(gaps, s_k, K)
-        print "Optimal K -> ", bestKValue
-
-        np.set_printoptions(precision=3)
-        bounding_box = np.stack(self.bounding_box(X)).transpose()
+        print "Optimal K -> ", bestKValue, " of ", clustersNumber
 
         classification = KMeans(n_clusters=bestKValue, random_state=0).fit(X)
 
@@ -118,46 +132,16 @@ class Kin:
 
         return max_error
 
-    def bounding_box(self, X):
-        return X.min(0), X.max(0)
-
-    # def gap_statistic(X):
-    #     (xmin, xmax), (ymin, ymax) = bounding_box(X)
-    #     # Dispersion for real distribution
-    #     ks = range(1, 10)
-    #     Wks = zeros(len(ks))
-    #     Wkbs = zeros(len(ks))
-    #     sk = zeros(len(ks))
-    #     for indk, k in enumerate(ks):
-    #         mu, clusters = find_centers(X, k)
-    #         Wks[indk] = np.log(Wk(mu, clusters))
-    #         # Create B reference datasets
-    #         B = 10
-    #         BWkbs = zeros(B)
-    #         for i in range(B):
-    #             Xb = []
-    #             for n in range(len(X)):
-    #                 Xb.append([random.uniform(xmin, xmax),
-    #                            random.uniform(ymin, ymax)])
-    #             Xb = np.array(Xb)
-    #             mu, clusters = find_centers(Xb, k)
-    #             BWkbs[i] = np.log(Wk(mu, clusters))
-    #         Wkbs[indk] = sum(BWkbs) / B
-    #         sk[indk] = np.sqrt(sum((BWkbs - Wkbs[indk]) ** 2) / B)
-    #     sk = sk * np.sqrt(1 + 1 / B)
-    #     return (ks, Wks, Wkbs, sk)
-
-
-    def plot_feature(self, descriptors):
-        d1 = []
-        for descriptor in descriptors:
-            if descriptor._shoulderDistance is not None:
-                d1.append(descriptor._shoulderDistance)
-            else:
-                d1.append(0)
-
-        plt.plot(range(0, len(descriptors)), np.array(d1))
+    def plot_feature(self, blocks):
+        for block in blocks:
+            d1 = []
+            d2 = []
+            for descriptor in block:
+                d1.append(descriptor._chestColor[0])
+                d2.append(descriptor._chestColor[1])
+            plt.plot(d1, d2, 'o')
         plt.show()
+        # plt.plot(range(0, len(descriptors)), np.array(d1))
 
     def save_people(self, filename, people):
         output = file(filename, "w")

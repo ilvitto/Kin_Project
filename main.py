@@ -33,7 +33,7 @@ def show(img):
 
 
 kin = Kin.Kin()
-kin.load("./dataset/0068/body_and_face.mat")
+kin.load("./dataset/0064/body_and_face.mat")
 kin.getDescriptors()
 
 # blocks = np.zeros(((78-35)*200 * (78-35), 50, 4))
