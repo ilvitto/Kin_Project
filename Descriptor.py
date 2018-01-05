@@ -114,8 +114,8 @@ class Descriptor:
             else:
                 str_frame_number = str(self._frame._frame_number)
 
-            rgbImage = cv2.imread('./dataset/0068/rgbReg_frames/'+str_frame_number+'.jpg')
-            indexImage = cv2.imread("./dataset/0068/bodyIndex_frames/" + str_frame_number + ".png")
+            rgbImage = cv2.imread('./dataset/0064/rgbReg_frames/'+str_frame_number+'.jpg')
+            indexImage = cv2.imread("./dataset/0064/bodyIndex_frames/" + str_frame_number + ".png")
             indexImage = cv2.cvtColor(indexImage, cv2.COLOR_BGR2GRAY)
             rgbImage = cv2.cvtColor(rgbImage, cv2.COLOR_BGR2RGB)
 

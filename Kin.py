@@ -66,6 +66,8 @@ class Kin:
                 #     descriptors.append(CheckNFrames()._descriptorMedian)
                 currentFrames = []
 
+        self.plot_feature(descriptors)
+
         #classify the number of people
         classification = self.classify_people(descriptors)
 
@@ -95,7 +97,7 @@ class Kin:
         for i in range(len(descriptors)):
             classification = KMeans(n_clusters=i+1, random_state=0).fit(X)
             # classification = cluster.MeanShift().fit(X)
-            error = self.intraClusterDistance(classification, X)
+            error = self.intraClusterDistanceAll(classification, X)
             classifications.append(classification)
             errors.append(error)
 
@@ -104,7 +106,7 @@ class Kin:
             errorsPerCent.append((max(errors) - error) / (max(errors) - min(errors)) * 100)
 
         #TODO: choose the elbow GAP
-        #TODO: SUPERVISED SAVED RESULTS 
+        #TODO: SUPERVISED SAVED RESULTS
         found = False
         threshold = 15 #DA SISTEMARE
         best = 1
@@ -121,7 +123,7 @@ class Kin:
         return classifications[best-1]
 
     #TODO: intracluster distance for all
-    def intraClusterDistance(self, classification, X):
+    def intraClusterDistanceCentroids(self, classification, X):
         error = 0
         max_error = 0
         for k in range(len(classification.cluster_centers_)):
@@ -129,6 +131,18 @@ class Kin:
                 if(classification.labels_[i] == k):
                     error = np.amax([scipy.spatial.distance.euclidean(x, classification.cluster_centers_[k]), error])
             max_error = np.amax([error, max_error])
+
+        return max_error
+
+    def intraClusterDistanceAll(self, classification, X):
+        error = 0
+        max_error = 0
+        for k in range(len(classification.cluster_centers_)):
+            for j, y in enumerate(X):
+                for i, x in enumerate(X):
+                    if(classification.labels_[i] == k and classification.labels_[j] == k):
+                        error = np.amax([scipy.spatial.distance.euclidean(x, y), error])
+                max_error = np.amax([error, max_error])
 
         return max_error
 
