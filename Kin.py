@@ -67,9 +67,9 @@ class Kin:
                     needNewBlock = False
                     blocks += 1
                 currentFrames.append(frame)
+                # Slow down
                 # temporaryDescriptor = self.processFrames(currentFrames)
-                # classification = self.classify_people(allDescriptors, blocks)
-                # classification = self.classify_people(descriptors + [temporaryDescriptor], blocks)
+                # classification = self.classify_people(descriptors + [temporaryDescriptor])
                 updated = True
             elif not frame.isGood(Descriptor.usedJoints):
                 if len(currentFrames) > 0 and updated:
@@ -88,14 +88,16 @@ class Kin:
         # classify the number of people
         classification = self.classify_people(descriptors, blocks - 1)
 
+
         print classification.cluster_centers_
         print classification.labels_
 
-        # compute centroids of clusters
+        #compute centroids of clusters
         people = classification.cluster_centers_
 
-        # self.plot_feature(descriptors)
+        #self.plot_feature(descriptors)
         self.save_people(filename="learned_people.txt", people=people)
+
 
     def processFrames(self, frames):
         return CheckNFrames(frames)._descriptorMedian
@@ -109,26 +111,58 @@ class Kin:
         bestKValue = gap.find_optimal_k(gaps, s_k, K)
         print "Optimal K -> ", bestKValue, " of ", clustersNumber
 
+        errors = []
+        classifications = []
+        for i in range(len(descriptors)):
+            classification = KMeans(n_clusters=i + 1, random_state=0).fit(X)
+            # classification = cluster.MeanShift().fit(X)
+            error = self.intraClusterDistance(classification, X)
+            classifications.append(classification)
+            errors.append(error)
+
+        errorsPerCent = []
+        for error in errors:
+            errorsPerCent.append((max(errors) - error) / (max(errors) - min(errors)) * 100)
+
         classification = KMeans(n_clusters=bestKValue, random_state=0).fit(X)
 
         # TODO: SUPERVISED SAVED RESULTS
         found = False
-        threshold = 15  # DA SISTEMARE
+        threshold = 15 #DA SISTEMARE
         best = 1
-        print classification.labels_
+        for i in range(1,len(errorsPerCent)):
+            if errorsPerCent[i]-errorsPerCent[i-1] > threshold:
+                found = True
+            if found and errorsPerCent[i]-errorsPerCent[i-1] < threshold:
+                best = i
+                break
+        print best
+        print classifications[best-1].labels_
         # plt.plot(range(1, len(errors)+1), np.array(errorsPerCent))
         # plt.show()
-        return classification
+        return classifications[best-1]
 
-    # TODO: intracluster distance for all
-    def intraClusterDistance(self, classification, X):
+    #TODO: intracluster distance for all
+    def intraClusterDistanceCentroids(self, classification, X):
         error = 0
         max_error = 0
         for k in range(len(classification.cluster_centers_)):
             for i, x in enumerate(X):
-                if (classification.labels_[i] == k):
+                if(classification.labels_[i] == k):
                     error = np.amax([scipy.spatial.distance.euclidean(x, classification.cluster_centers_[k]), error])
             max_error = np.amax([error, max_error])
+
+        return max_error
+
+    def intraClusterDistanceAll(self, classification, X):
+        error = 0
+        max_error = 0
+        for k in range(len(classification.cluster_centers_)):
+            for j, y in enumerate(X):
+                for i, x in enumerate(X):
+                    if(classification.labels_[i] == k and classification.labels_[j] == k):
+                        error = np.amax([scipy.spatial.distance.euclidean(x, y), error])
+                max_error = np.amax([error, max_error])
 
         return max_error
 
@@ -141,7 +175,6 @@ class Kin:
                 d2.append(descriptor._chestColor[1])
             plt.plot(d1, d2, 'o')
         plt.show()
-        # plt.plot(range(0, len(descriptors)), np.array(d1))
 
     def save_people(self, filename, people):
         output = file(filename, "w")
