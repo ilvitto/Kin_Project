@@ -16,6 +16,7 @@ from Descriptor import Descriptor
 from matplotlib import pyplot as plt
 import math
 import os
+import sys
 from gap import gap
 
 import sklearn.cluster as cluster
@@ -53,7 +54,8 @@ class Kin:
         people = classification.cluster_centers_
 
         # save classified people to file
-        self.save_people(filename="learned_people.txt", people=people)
+        if self.ask_supervised():
+            self.save_people(filename="learned_people.txt", people=people)
         return descriptors, classification
 
 
@@ -114,9 +116,9 @@ class Kin:
             elif not frame.isGood(Descriptor.usedJoints):
                 if len(currentFrames) > 0 and updated:
                     descriptors.append(self.processFrames(currentFrames))
-                    print "Classifying..."
-                    classification = self.classify_people_with_threshold(descriptors, blocks)
-                    print "...Classified"
+                    classification = self.classify_people_with_gap(descriptors, blocks, colorFeature=False, printDetails=False)
+                    classification_with_color = self.classify_people_with_gap(descriptors, blocks, colorFeature=True, printDetails=False)
+                    self.checkIfColorIsRelevant(classification, classification_with_color)
                     updated = False
                 # else:
                 #     descriptors.append(CheckNFrames()._descriptorMedian)
@@ -125,23 +127,36 @@ class Kin:
 
         # self.plot_feature(allDescriptors)
         if descriptors == []:
-            print "No descriptors founded in the video"
-            return
+            print "No descriptors founded in the video #" + self._videoNumber
 
         return descriptors, blocks
 
+    #TODO: Check color invariant
+    def checkIfColorIsRelevant(self, classification, classification_with_color):
+        #check if there are equal centroids excluding colors (last 3 features)
+
+        pass
 
     def processFrames(self, frames):
         return CheckNFrames(frames, self._filename)._descriptorMedian
 
     # TODO: SUPERVISED SAVED RESULTS
+    def ask_supervised(self):
+        sys.stdout.write("Do you want to save data classification? (y/n)")
+        s = raw_input().lower()
+        if s == "y" or s == "Yes":
+            return True
+        return False
 
-
-    def classify_people_with_threshold(self, descriptors, clustersNumber):
-        print "Using Elbow method with threshold..."
-        X = np.stack(descriptors[i].getFeatures() for i in range(len(descriptors)))
+    def classify_people_with_threshold(self, descriptors, clustersNumber, colorFeature=False, printDetails=True):
+        if printDetails: print "Using Elbow method with threshold..."
+        if colorFeature:
+            X = np.stack(descriptors[i].getFeatures()+descriptors[i].getColorFeature() for i in range(len(descriptors)))
+        else:
+            X = np.stack(descriptors[i].getFeatures() for i in range(len(descriptors)))
 
         errors = []
+        errorsPerCent = []
         classifications = []
         for i in range(clustersNumber):
             classification = KMeans(n_clusters=i + 1, random_state=0).fit(X)
@@ -149,7 +164,6 @@ class Kin:
             classifications.append(classification)
             errors.append(error)
 
-        errorsPerCent = []
         for error in errors:
             errorsPerCent.append((max(errors) - error) / (max(errors) - min(errors)) * 100)
 
@@ -162,22 +176,24 @@ class Kin:
             if found and errorsPerCent[i] - errorsPerCent[i - 1] < threshold:
                 best = i
                 break
-        print "Optimal K -> ", best
-        print "Labels -> ", classifications[best - 1].labels_
+        if printDetails: print "Optimal K -> ", best
+        if printDetails: print "Labels -> ", classifications[best - 1].labels_
         # plt.plot(range(1, len(errors)+1), np.array(errorsPerCent))
         # plt.show()
         return classifications[best - 1]
 
-    def classify_people_with_gap(self, descriptors, clustersNumber):
-        print "Using GAP method..."
-        X = np.stack(descriptors[i].getFeatures() + descriptors[i].g for i in range(len(descriptors)))
-
-        print "Finding best K..."
+    def classify_people_with_gap(self, descriptors, clustersNumber, colorFeature=False, printDetails=True):
+        if printDetails: print "Using GAP method..."
+        if colorFeature:
+            X = np.stack(descriptors[i].getFeatures()+descriptors[i].getColorFeature() for i in range(len(descriptors)))
+        else:
+            X = np.stack(descriptors[i].getFeatures() for i in range(len(descriptors)))
+        if printDetails: print "Finding best K..."
         gaps, s_k, K = gap.gap_statistic(X, refs=None, B=10, K=range(1, clustersNumber + 1), N_init=10)
         bestKValue = gap.find_optimal_k(gaps, s_k, K)
-        print "Optimal K -> ", bestKValue, " of ", clustersNumber
+        if printDetails: print "Optimal K -> ", bestKValue, " of ", clustersNumber
         classification =  KMeans(n_clusters=bestKValue, random_state=0).fit(X)
-        print "Labels -> ", classification.labels_
+        if printDetails: print "Labels -> ", classification.labels_
         return classification
 
     def intraClusterDistanceCentroids(self, classification, X):
@@ -188,7 +204,6 @@ class Kin:
                 if(classification.labels_[i] == k):
                     error = np.amax([scipy.spatial.distance.euclidean(x, classification.cluster_centers_[k]), error])
             max_error = np.amax([error, max_error])
-
         return max_error
 
     def intraClusterDistanceAll(self, classification, X):
@@ -215,6 +230,6 @@ class Kin:
     def save_people(self, filename, people):
         output = file(filename, "w")
         for person in people:
-            output.write(person)
+            output.write(str(person))
             output.write("\n")
         output.close()
