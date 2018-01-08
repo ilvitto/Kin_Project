@@ -3,6 +3,7 @@ from Joint import Joint
 import cv2
 import numpy as np
 
+
 class Descriptor:
     usedJoints = [Joint.ShoulderLeft, Joint.SpineShoulder, Joint.SpineMid, Joint.SpineBase, Joint.ShoulderRight,
                   Joint.ElbowLeft, Joint.ElbowRight,
@@ -105,19 +106,12 @@ class Descriptor:
         return head + chest + (leftLeg + rightLeg) / 2 if (
             head is not None and chest is not None and rightLeg is not None and leftLeg is not None) else None
 
-    #TODO: Remove dependece with dataset
+    # TODO: Remove dependece with dataset
     def getChestColor(self):
         if self._joints is not None and self._joints[Joint.SpineMid].isTracked():
-            if self._frame._frame_number < 10:
-                str_frame_number = "000"+str(self._frame._frame_number)
-            elif self._frame._frame_number < 100:
-                str_frame_number = "00" + str(self._frame._frame_number)
-            elif self._frame._frame_number < 1000:
-                str_frame_number = "0" + str(self._frame._frame_number)
-            else:
-                str_frame_number = str(self._frame._frame_number)
+            str_frame_number = self.realImageName(self._frame._frame_number)
 
-            rgbImage = cv2.imread('./dataset/' + self._filename + '/rgbReg_frames/'+str_frame_number+'.jpg')
+            rgbImage = cv2.imread('./dataset/' + self._filename + '/rgbReg_frames/' + str_frame_number + '.jpg')
             indexImage = cv2.imread('./dataset/' + self._filename + '/bodyIndex_frames/' + str_frame_number + ".png")
             indexImage = cv2.cvtColor(indexImage, cv2.COLOR_BGR2GRAY)
             rgbImage = cv2.cvtColor(rgbImage, cv2.COLOR_BGR2RGB)
@@ -127,9 +121,19 @@ class Descriptor:
 
             img2_fg = cv2.bitwise_and(rgbImage, rgbImage, mask=mask_inv)
 
-            (r,g,b,_) = cv2.mean(img2_fg, mask=mask_inv)
+            (r, g, b, _) = cv2.mean(img2_fg, mask=mask_inv)
 
-        return (r,g,b)
+        return np.array([r, g, b]) / 255
+
+    def realImageName(self, frame_number):
+        if frame_number < 10:
+            return "000" + str(frame_number)
+        elif frame_number < 100:
+            return "00" + str(frame_number)
+        elif frame_number < 1000:
+            return "0" + str(frame_number)
+        else:
+            return str(frame_number)
 
     def showDescriptor(self):
         if self.isEmpty():
@@ -162,9 +166,9 @@ class Descriptor:
         return True if self._shoulderDistance is None and self._shoulderDirectDistance is None and self._leftArmLong is None \
                        and self._rightArmLong is None and self._leftArmLong is None and self._rightArmLong is None and self._height is None else False
 
-    #_shoulderDistance, _shoulderDirectDistance, _leftArmLong, _rightArmLong, _leftLegLong, _rightLegLong, _height, _clavicleLeft, _clavicleRight
+    # _shoulderDistance, _shoulderDirectDistance, _leftArmLong, _rightArmLong, _leftLegLong, _rightLegLong, _height, _clavicleLeft, _clavicleRight
     def getFeatures(self):
-        return [self._shoulderDistance, self._leftArmLong, self._rightArmLong\
+        return [self._shoulderDistance, self._leftArmLong, self._rightArmLong \
             , self._leftLegLong, self._rightLegLong, self._height, self._clavicleLeft, self._clavicleRight]
 
     def getColorFeature(self):

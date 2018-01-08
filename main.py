@@ -35,21 +35,19 @@ dataset1 = "0064"
 dataset2 = "0068"
 
 kin1 = Kin.Kin()
-desc1, classification1 = kin1.run(dataset1)
+desc1, classification1 = kin1.run(dataset2)
 
-
-kin2 = Kin.Kin()
-desc2, classification2 = kin2.run(dataset2)
-
-kin3 = Kin.Kin()
-classification3 = kin3.classify_people_with_gap(desc1 + desc2, len(desc1 + desc2))
-
-print classification1.labels_
-
-print classification2.labels_
-print classification3.labels_
-
-
+# kin2 = Kin.Kin()
+# desc2, classification2 = kin2.run(dataset2)
+#
+# kin3 = Kin.Kin()
+# classification3 = kin3.classify(desc1 + desc2, method=Kin.GAP)
+#
+# print classification1.labels_
+#
+# print classification2.labels_
+# print classification3.labels_
+# TODO: Kmeans complessivo oltre che incrementale
 
 # kin.load("./dataset/0064/body_and_face.mat")
 # kin.getDescriptors()

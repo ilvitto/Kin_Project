@@ -1,28 +1,28 @@
-from array import array
-
-import time
-import scipy
-import scipy.io as sio
-import scipy.signal as sig
 import numpy as np
-from InfoVideo import InfoVideo
-from Frame import Frame
-from Face import Face
-from FaceHD import FaceHD
-from Body import Body
-from Joint import Joint
-from CheckNFrames import CheckNFrames
-from Descriptor import Descriptor
-from matplotlib import pyplot as plt
-import math
 import os
 import sys
-from gap import gap
 
-import sklearn.cluster as cluster
+import cv2
+import scipy
+import scipy.io as sio
+from gap import gap
+from matplotlib import pyplot as plt
 from sklearn.cluster import KMeans
 
+from Body import Body
+from CheckNFrames import CheckNFrames
+from Descriptor import Descriptor
+from Face import Face
+from FaceHD import FaceHD
+from Frame import Frame
+from InfoVideo import InfoVideo
+
 dataset_folder = "./dataset"
+GAP = "gap"
+THRESH = "thresh"
+
+OUTPUT_FILE = "learned_people.txt"
+
 
 class Kin:
     def __init__(self):
@@ -30,43 +30,57 @@ class Kin:
         self._frames = None
         self._filename = None
 
-    def run(self, filename = None):
+    def run(self, filename=None, colors=False, method=GAP):
         # load dataset
+        if (os.path.isfile(OUTPUT_FILE)):
+            allDescriptors = self.load_people(OUTPUT_FILE)
+        else:
+            allDescriptors = []
         # self.load_all_datasets()
         self._filename = filename
         if filename is not None:
             self.load(dataset_folder + "/" + filename + "/body_and_face.mat")
-        else:
-            self.load_all_datasets()
+            # get descriptors
+            descriptors = self.getDescriptors()
 
-        # get descriptors
-        descriptors, blocks = self.getDescriptors()
+            print "Processing..."
+            for descriptor in descriptors:
+                if colors:
+                    allDescriptors = np.concatenate(
+                        (allDescriptors, [descriptor.getFeatures() + descriptor.getColorFeature()]))
+                else:
+                    allDescriptors = np.concatenate((allDescriptors, [descriptor.getFeatures()]))
 
-        # classify people
-        # TODO: use learded_people.txt
-        # classification = self.classify_people_with_gap(descriptors, blocks - 1)
-        classification = self.classify_people_with_threshold(descriptors, blocks - 1)
+                classification = self.classify(allDescriptors, colors=colors, method=method)
+                print classification.labels_
+                plt.imshow(cv2.imread(dataset_folder + "/" + filename + "/rgbReg_frames/" + descriptor.realImageName(
+                    descriptor._referenceFrame) + ".jpg"))
 
-        print classification.cluster_centers_
-        print classification.labels_
+                targetLabel = classification.labels_[-1]
+                oldImageNumber = None
+                for index, label in enumerate(classification.labels_):
+                    if label == targetLabel:
+                        oldImageNumber = allDescriptors[index]._referenceFrame
+                if oldImageNumber is not None:
+                    plt.imshow(cv2.imread(dataset_folder + "/" + filename + "/rgbReg_frames/" + descriptor.realImageName(
+                        oldImageNumber) + ".jpg"))
+                plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
+                plt.show()
 
-        # compute centroids of clusters
-        people = classification.cluster_centers_
+            classification = self.classify(allDescriptors, colors=colors, method=method)
 
-        # save classified people to file
-        if self.ask_supervised():
-            self.save_people(filename="learned_people.txt", people=people)
-        return descriptors, classification
-
+            if self.ask_supervised():
+                X = np.stack(allDescriptors[i] for i in range(len(allDescriptors)))
+                self.save_people(filename=OUTPUT_FILE, people=X)
+            return allDescriptors, classification
+        return [], None
 
     def load_all_datasets(self):
         for filename in os.listdir(dataset_folder):
             self.load(dataset_folder + '/' + filename + "/body_and_face.mat")
 
-
     def load(self, filename):
         self._processMatlabData(sio.loadmat(filename, squeeze_me=True))
-
 
     def _processMatlabData(self, data):
         self._infoVideo = InfoVideo(data['info_video'])
@@ -84,15 +98,11 @@ class Kin:
             frame = Frame(face, faceHD, body, frame_i)
             self._frames.append(frame)
 
-    #TODO    if len(descriptors) == 1 -> median descriptor
-    #TODO    if len(descriptors) == 2 -> classify with thresholds per features/limit error/range values
-    #TODO    if len(descriptors) > 3 -> KMeans
+    # TODO    if len(descriptors) == 1 -> median descriptor
+    # TODO    if len(descriptors) == 2 -> classify with thresholds per features/limit error/range values
+    # TODO    if len(descriptors) > 3 -> KMeans
     def getDescriptors(self):
-        descriptorsAvg = []
-        descriptorsMedian = []
-        blockSize = 5
         print "Number of frame: " + str(len(self._frames))
-        print "Block size: " + str(blockSize) + "\n"
 
         descriptors = []
 
@@ -105,35 +115,28 @@ class Kin:
         for i, frame in enumerate(self._frames):
             # print i + 1, " of ", len(self._frames)
             if frame.isVeryGood(Descriptor.usedJoints):
-                if(needNewBlock):
+                if (needNewBlock):
                     needNewBlock = False
                     blocks += 1
                 currentFrames.append(frame)
-                # Slow down
-                # temporaryDescriptor = self.processFrames(currentFrames)
-                # classification = self.classify_people(descriptors + [temporaryDescriptor])
                 updated = True
             elif not frame.isGood(Descriptor.usedJoints):
                 if len(currentFrames) > 0 and updated:
                     descriptors.append(self.processFrames(currentFrames))
-                    classification = self.classify_people_with_gap(descriptors, blocks, colorFeature=False, printDetails=False)
-                    classification_with_color = self.classify_people_with_gap(descriptors, blocks, colorFeature=True, printDetails=False)
-                    self.checkIfColorIsRelevant(classification, classification_with_color)
                     updated = False
-                # else:
-                #     descriptors.append(CheckNFrames()._descriptorMedian)
                 currentFrames = []
                 needNewBlock = True
 
-        # self.plot_feature(allDescriptors)
         if descriptors == []:
-            print "No descriptors founded in the video #" + self._videoNumber
+            print "No descriptors founded in the video #" + self._filename
+        else:
+            print "Found " + str(blocks) + " descriptors"
 
-        return descriptors, blocks
+        return descriptors
 
-    #TODO: Check color invariant
+    # TODO: Check color invariant
     def checkIfColorIsRelevant(self, classification, classification_with_color):
-        #check if there are equal centroids excluding colors (last 3 features)
+        # check if there are equal centroids excluding colors (last 3 features)
 
         pass
 
@@ -148,17 +151,19 @@ class Kin:
             return True
         return False
 
-    def classify_people_with_threshold(self, descriptors, clustersNumber, colorFeature=False, printDetails=True):
-        if printDetails: print "Using Elbow method with threshold..."
-        if colorFeature:
-            X = np.stack(descriptors[i].getFeatures()+descriptors[i].getColorFeature() for i in range(len(descriptors)))
+    def classify(self, descriptors, colors=False, method=GAP):
+        if (method == GAP):
+            return self.classify_people_with_gap(descriptors, colors)
         else:
-            X = np.stack(descriptors[i].getFeatures() for i in range(len(descriptors)))
+            return self.classify_people_with_threshold(descriptors, colors)
 
+    def classify_people_with_threshold(self, descriptors, printDetails=True):
+        if printDetails: print "Using Elbow method with threshold..."
+        X = np.stack(descriptors[i] for i in range(len(descriptors)))
         errors = []
         errorsPerCent = []
         classifications = []
-        for i in range(clustersNumber):
+        for i in range(len(descriptors)):
             classification = KMeans(n_clusters=i + 1, random_state=0).fit(X)
             error = self.intraClusterDistanceCentroids(classification, X)
             classifications.append(classification)
@@ -182,17 +187,14 @@ class Kin:
         # plt.show()
         return classifications[best - 1]
 
-    def classify_people_with_gap(self, descriptors, clustersNumber, colorFeature=False, printDetails=True):
+    def classify_people_with_gap(self, descriptors, printDetails=True):
         if printDetails: print "Using GAP method..."
-        if colorFeature:
-            X = np.stack(descriptors[i].getFeatures()+descriptors[i].getColorFeature() for i in range(len(descriptors)))
-        else:
-            X = np.stack(descriptors[i].getFeatures() for i in range(len(descriptors)))
+        X = np.stack(descriptors[i] for i in range(len(descriptors)))
         if printDetails: print "Finding best K..."
-        gaps, s_k, K = gap.gap_statistic(X, refs=None, B=10, K=range(1, clustersNumber + 1), N_init=10)
+        gaps, s_k, K = gap.gap_statistic(X, refs=None, B=10, K=range(1, len(descriptors) + 1), N_init=10)
         bestKValue = gap.find_optimal_k(gaps, s_k, K)
-        if printDetails: print "Optimal K -> ", bestKValue, " of ", clustersNumber
-        classification =  KMeans(n_clusters=bestKValue, random_state=0).fit(X)
+        if printDetails: print "Optimal K -> ", bestKValue, " of ", len(descriptors)
+        classification = KMeans(n_clusters=bestKValue, random_state=0).fit(X)
         if printDetails: print "Labels -> ", classification.labels_
         return classification
 
@@ -201,7 +203,7 @@ class Kin:
         max_error = 0
         for k in range(len(classification.cluster_centers_)):
             for i, x in enumerate(X):
-                if(classification.labels_[i] == k):
+                if (classification.labels_[i] == k):
                     error = np.amax([scipy.spatial.distance.euclidean(x, classification.cluster_centers_[k]), error])
             max_error = np.amax([error, max_error])
         return max_error
@@ -212,7 +214,7 @@ class Kin:
         for k in range(len(classification.cluster_centers_)):
             for j, y in enumerate(X):
                 for i, x in enumerate(X):
-                    if(classification.labels_[i] == k and classification.labels_[j] == k):
+                    if (classification.labels_[i] == k and classification.labels_[j] == k):
                         error = np.amax([scipy.spatial.distance.euclidean(x, y), error])
                 max_error = np.amax([error, max_error])
         return max_error
@@ -228,8 +230,7 @@ class Kin:
         plt.show()
 
     def save_people(self, filename, people):
-        output = file(filename, "w")
-        for person in people:
-            output.write(str(person))
-            output.write("\n")
-        output.close()
+        np.savetxt(filename, people)
+
+    def load_people(self, filename):
+        return np.loadtxt(filename)

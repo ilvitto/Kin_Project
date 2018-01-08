@@ -79,4 +79,5 @@ class CheckNFrames:
         descriptor._clavicleLeft = np.median(clLefts) if len(clLefts) > 0 else None
         descriptor._clavicleRight = np.median(clRights) if len(clRights) > 0 else None
         descriptor._chestColor = np.mean(chestColor, axis=(0)) if len(chestColor) > 0 else None
+        descriptor._referenceFrame = self._frames[0]._frame_number
         return descriptor
