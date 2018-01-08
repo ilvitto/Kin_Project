@@ -31,10 +31,13 @@ def show(img):
     plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
     plt.show()
 
+dataset = "0064"
 
 kin = Kin.Kin()
-kin.load("./dataset/0064/body_and_face.mat")
-kin.getDescriptors()
+kin.run(dataset)
+
+# kin.load("./dataset/0064/body_and_face.mat")
+# kin.getDescriptors()
 
 # blocks = np.zeros(((78-35)*200 * (78-35), 50, 4))
 #

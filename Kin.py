@@ -15,19 +15,53 @@ from CheckNFrames import CheckNFrames
 from Descriptor import Descriptor
 from matplotlib import pyplot as plt
 import math
+import os
 from gap import gap
 
 import sklearn.cluster as cluster
 from sklearn.cluster import KMeans
 
+dataset_folder = "./dataset"
 
 class Kin:
     def __init__(self):
         self._infoVideo = None
         self._frames = None
 
+    def run(self, filename = None):
+        # load dataset
+        # self.load_all_datasets()
+        if filename is not None:
+            self.load(dataset_folder + "/" + filename + "/body_and_face.mat")
+        else:
+            self.load_all_datasets()
+
+        # get descriptors
+        descriptors, blocks = self.getDescriptors()
+
+        # classify people
+        # TODO: use learded_people.txt
+        # classification = self.classify_people_with_gap(descriptors, blocks - 1)
+        classification = self.classify_people_with_threshold(descriptors, blocks - 1)
+
+        print classification.cluster_centers_
+        print classification.labels_
+
+        # compute centroids of clusters
+        people = classification.cluster_centers_
+
+        # save classified people to file
+        self.save_people(filename="learned_people.txt", people=people)
+
+
+    def load_all_datasets(self):
+        for filename in os.listdir(dataset_folder):
+            self.load(dataset_folder + '/' + filename + "/body_and_face.mat")
+
+
     def load(self, filename):
         self._processMatlabData(sio.loadmat(filename, squeeze_me=True))
+
 
     def _processMatlabData(self, data):
         self._infoVideo = InfoVideo(data['info_video'])
@@ -45,6 +79,9 @@ class Kin:
             frame = Frame(face, faceHD, body, frame_i)
             self._frames.append(frame)
 
+    #TODO    if len(descriptors) == 1 -> median descriptor
+    #TODO    if len(descriptors) == 2 -> classify with thresholds per features/limit error/range values
+    #TODO    if len(descriptors) > 3 -> KMeans
     def getDescriptors(self):
         descriptorsAvg = []
         descriptorsMedian = []
@@ -75,7 +112,7 @@ class Kin:
                 if len(currentFrames) > 0 and updated:
                     descriptors.append(self.processFrames(currentFrames))
                     print "Classifying..."
-                    classification = self.classify_people(descriptors, blocks)
+                    classification = self.classify_people_with_threshold(descriptors, blocks)
                     print "...Classified"
                     updated = False
                 # else:
@@ -84,38 +121,27 @@ class Kin:
                 needNewBlock = True
 
         # self.plot_feature(allDescriptors)
+        if descriptors == []:
+            print "No descriptors founded in the video"
+            return
 
-        # classify the number of people
-        classification = self.classify_people(descriptors, blocks - 1)
-
-
-        print classification.cluster_centers_
-        print classification.labels_
-
-        #compute centroids of clusters
-        people = classification.cluster_centers_
-
-        #self.plot_feature(descriptors)
-        self.save_people(filename="learned_people.txt", people=people)
+        return descriptors, blocks
 
 
     def processFrames(self, frames):
         return CheckNFrames(frames)._descriptorMedian
 
-    def classify_people(self, descriptors, clustersNumber):
-        people = []
-        X = np.stack(descriptors[i].getFeatures() for i in range(len(descriptors)))
+    # TODO: SUPERVISED SAVED RESULTS
 
-        print "Finding best K..."
-        gaps, s_k, K = gap.gap_statistic(X, refs=None, B=10, K=range(1, clustersNumber + 1), N_init=10)
-        bestKValue = gap.find_optimal_k(gaps, s_k, K)
-        print "Optimal K -> ", bestKValue, " of ", clustersNumber
+
+    def classify_people_with_threshold(self, descriptors, clustersNumber):
+        print "Using Elbow method with threshold..."
+        X = np.stack(descriptors[i].getFeatures() for i in range(len(descriptors)))
 
         errors = []
         classifications = []
-        for i in range(len(descriptors)):
+        for i in range(clustersNumber):
             classification = KMeans(n_clusters=i + 1, random_state=0).fit(X)
-            # classification = cluster.MeanShift().fit(X)
             error = self.intraClusterDistanceCentroids(classification, X)
             classifications.append(classification)
             errors.append(error)
@@ -124,25 +150,33 @@ class Kin:
         for error in errors:
             errorsPerCent.append((max(errors) - error) / (max(errors) - min(errors)) * 100)
 
-        classification = KMeans(n_clusters=bestKValue, random_state=0).fit(X)
-
-        # TODO: SUPERVISED SAVED RESULTS
         found = False
-        threshold = 15 #DA SISTEMARE
+        threshold = 15  # TODO: Choose a better threshold
         best = 1
-        for i in range(1,len(errorsPerCent)):
-            if errorsPerCent[i]-errorsPerCent[i-1] > threshold:
+        for i in range(1, len(errorsPerCent)):
+            if errorsPerCent[i] - errorsPerCent[i - 1] > threshold:
                 found = True
-            if found and errorsPerCent[i]-errorsPerCent[i-1] < threshold:
+            if found and errorsPerCent[i] - errorsPerCent[i - 1] < threshold:
                 best = i
                 break
-        print best
-        print classifications[best-1].labels_
+        print "Optimal K -> ", best
+        print "Labels -> ", classifications[best - 1].labels_
         # plt.plot(range(1, len(errors)+1), np.array(errorsPerCent))
         # plt.show()
-        return classifications[best-1]
+        return classifications[best - 1]
 
-    #TODO: intracluster distance for all
+    def classify_people_with_gap(self, descriptors, clustersNumber):
+        print "Using GAP method..."
+        X = np.stack(descriptors[i].getFeatures() for i in range(len(descriptors)))
+
+        print "Finding best K..."
+        gaps, s_k, K = gap.gap_statistic(X, refs=None, B=10, K=range(1, clustersNumber + 1), N_init=10)
+        bestKValue = gap.find_optimal_k(gaps, s_k, K)
+        print "Optimal K -> ", bestKValue, " of ", clustersNumber
+        classification =  KMeans(n_clusters=bestKValue, random_state=0).fit(X)
+        print "Labels -> ", classification.labels_
+        return classification
+
     def intraClusterDistanceCentroids(self, classification, X):
         error = 0
         max_error = 0
@@ -163,7 +197,6 @@ class Kin:
                     if(classification.labels_[i] == k and classification.labels_[j] == k):
                         error = np.amax([scipy.spatial.distance.euclidean(x, y), error])
                 max_error = np.amax([error, max_error])
-
         return max_error
 
     def plot_feature(self, blocks):

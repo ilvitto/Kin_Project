@@ -9,10 +9,11 @@ class Descriptor:
                   Joint.WristLeft, Joint.WristRight, Joint.Head, Joint.Neck, Joint.HipLeft, Joint.HipRight,
                   Joint.KneeLeft, Joint.KneeRight, Joint.AnkleLeft, Joint.AnkleRight, Joint.Neck]
 
-    def __init__(self, frame=None):
+    def __init__(self, frame=None, filename=None):
         if (frame is not None and frame._body is not None):
             self._frame = frame
             self._joints = frame._body._joints
+            self._filename = filename
             self._shoulderDistance = self.getShoulderDistance()
             self._shoulderDirectDistance = self.getDirectShoulderDistance()
             self._leftArmLong = self.getLeftArmLong()
@@ -28,6 +29,7 @@ class Descriptor:
         else:
             self._frame = None
             self._joints = None
+            self._filename = None
             self._shoulderDistance = None
             self._shoulderDirectDistance = None
             self._leftArmLong = None
@@ -103,6 +105,7 @@ class Descriptor:
         return head + chest + (leftLeg + rightLeg) / 2 if (
             head is not None and chest is not None and rightLeg is not None and leftLeg is not None) else None
 
+    #TODO: Remove dependece with dataset
     def getChestColor(self):
         if self._joints is not None and self._joints[Joint.SpineMid].isTracked():
             if self._frame._frame_number < 10:
