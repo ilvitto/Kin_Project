@@ -117,8 +117,8 @@ class Descriptor:
             else:
                 str_frame_number = str(self._frame._frame_number)
 
-            rgbImage = cv2.imread('./dataset/0064/rgbReg_frames/'+str_frame_number+'.jpg')
-            indexImage = cv2.imread("./dataset/0064/bodyIndex_frames/" + str_frame_number + ".png")
+            rgbImage = cv2.imread('./dataset/' + self._filename + '/rgbReg_frames/'+str_frame_number+'.jpg')
+            indexImage = cv2.imread('./dataset/' + self._filename + '/bodyIndex_frames/' + str_frame_number + ".png")
             indexImage = cv2.cvtColor(indexImage, cv2.COLOR_BGR2GRAY)
             rgbImage = cv2.cvtColor(rgbImage, cv2.COLOR_BGR2RGB)
 
@@ -165,4 +165,4 @@ class Descriptor:
     #_shoulderDistance, _shoulderDirectDistance, _leftArmLong, _rightArmLong, _leftLegLong, _rightLegLong, _height, _clavicleLeft, _clavicleRight
     def getFeatures(self):
         return [self._shoulderDistance, self._leftArmLong, self._rightArmLong\
-            , self._leftLegLong, self._rightLegLong, self._height, self._clavicleLeft, self._clavicleRight, self._chestColor[0], self._chestColor[1], self._chestColor[2]]
+            , self._leftLegLong, self._rightLegLong, self._height, self._clavicleLeft, self._clavicleRight]

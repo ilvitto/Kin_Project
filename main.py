@@ -31,10 +31,25 @@ def show(img):
     plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
     plt.show()
 
-dataset = "0064"
+dataset1 = "0064"
+dataset2 = "0068"
 
-kin = Kin.Kin()
-kin.run(dataset)
+kin1 = Kin.Kin()
+desc1, classification1 = kin1.run(dataset1)
+
+
+kin2 = Kin.Kin()
+desc2, classification2 = kin2.run(dataset2)
+
+kin3 = Kin.Kin()
+classification3 = kin3.classify_people_with_gap(desc1 + desc2, len(desc1 + desc2))
+
+print classification1.labels_
+
+print classification2.labels_
+print classification3.labels_
+
+
 
 # kin.load("./dataset/0064/body_and_face.mat")
 # kin.getDescriptors()

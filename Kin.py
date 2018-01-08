@@ -27,10 +27,12 @@ class Kin:
     def __init__(self):
         self._infoVideo = None
         self._frames = None
+        self._filename = None
 
     def run(self, filename = None):
         # load dataset
         # self.load_all_datasets()
+        self._filename = filename
         if filename is not None:
             self.load(dataset_folder + "/" + filename + "/body_and_face.mat")
         else:
@@ -52,6 +54,7 @@ class Kin:
 
         # save classified people to file
         self.save_people(filename="learned_people.txt", people=people)
+        return descriptors, classification
 
 
     def load_all_datasets(self):
@@ -129,7 +132,7 @@ class Kin:
 
 
     def processFrames(self, frames):
-        return CheckNFrames(frames)._descriptorMedian
+        return CheckNFrames(frames, self._filename)._descriptorMedian
 
     # TODO: SUPERVISED SAVED RESULTS
 
@@ -167,7 +170,7 @@ class Kin:
 
     def classify_people_with_gap(self, descriptors, clustersNumber):
         print "Using GAP method..."
-        X = np.stack(descriptors[i].getFeatures() for i in range(len(descriptors)))
+        X = np.stack(descriptors[i].getFeatures() + descriptors[i].g for i in range(len(descriptors)))
 
         print "Finding best K..."
         gaps, s_k, K = gap.gap_statistic(X, refs=None, B=10, K=range(1, clustersNumber + 1), N_init=10)

@@ -4,10 +4,10 @@ import numpy as np
 
 class CheckNFrames:
 
-    def __init__(self, frames = []):
+    def __init__(self, frames = [], filename = None):
         self._frames = frames
         # self._descriptorAvg = self.getDescriptorAvg(frames)
-        self._descriptorMedian = self.getDescriptorMedian(frames)
+        self._descriptorMedian = self.getDescriptorMedian(frames, filename)
 
     # def getDescriptorAvg(self, frames):
     #     descriptors = []
@@ -15,10 +15,10 @@ class CheckNFrames:
     #         descriptors.append(Descriptor(frame))
     #     return self.average(descriptors)
 
-    def getDescriptorMedian(self, frames):
+    def getDescriptorMedian(self, frames, filename):
         descriptors = []
         for frame in frames:
-            descriptors.append(Descriptor(frame))
+            descriptors.append(Descriptor(frame, filename))
         return self.median(descriptors)
         #return Descriptor(frames[-1])
     # def average(self, descriptors):
