@@ -165,4 +165,7 @@ class Descriptor:
     #_shoulderDistance, _shoulderDirectDistance, _leftArmLong, _rightArmLong, _leftLegLong, _rightLegLong, _height, _clavicleLeft, _clavicleRight
     def getFeatures(self):
         return [self._shoulderDistance, self._leftArmLong, self._rightArmLong\
-            , self._leftLegLong, self._rightLegLong, self._height, self._clavicleLeft, self._clavicleRight, self._chestColor[0], self._chestColor[1], self._chestColor[2]]
+            , self._leftLegLong, self._rightLegLong, self._height, self._clavicleLeft, self._clavicleRight]
+
+    def getColorFeature(self):
+        return [self._chestColor[0], self._chestColor[1], self._chestColor[2]]

@@ -31,7 +31,7 @@ def show(img):
     plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
     plt.show()
 
-dataset = "0064"
+dataset = "0068"
 
 kin = Kin.Kin()
 kin.run(dataset)
