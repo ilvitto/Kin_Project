@@ -16,8 +16,12 @@ from Face import Face
 from FaceHD import FaceHD
 from Frame import Frame
 from InfoVideo import InfoVideo
+import pylab
+import matplotlib.cm as cm
+import shutil
 
 dataset_folder = "./dataset"
+savedFrames_folder = './savedFrames'
 GAP = "gap"
 THRESH = "thresh"
 
@@ -45,33 +49,63 @@ class Kin:
 
             print "Processing..."
             for descriptor in descriptors:
-                if colors:
-                    allDescriptors = np.concatenate(
-                        (allDescriptors, [descriptor.getFeatures() + descriptor.getColorFeature()]))
+                #Save relevant frame for each median descriptor
+                self.saveRelevantFrame(descriptor)
+
+                #First case for incompatible size
+                if allDescriptors == []:
+                    allDescriptors = [descriptor.getFeatures()]
                 else:
-                    allDescriptors = np.concatenate((allDescriptors, [descriptor.getFeatures()]))
+                    if colors:
+                        allDescriptors = np.concatenate(
+                            (allDescriptors, [descriptor.getFeatures() + descriptor.getColorFeature()]))
+                    else:
+                        allDescriptors = np.concatenate((allDescriptors, [descriptor.getFeatures()]))
 
                 classification = self.classify(allDescriptors, colors=colors, method=method)
                 print classification.labels_
-                plt.imshow(cv2.imread(dataset_folder + "/" + filename + "/rgbReg_frames/" + descriptor.realImageName(
-                    descriptor._referenceFrame) + ".jpg"))
 
-                targetLabel = classification.labels_[-1]
+                # TODO: Choose the best image from saved Frames of index-cluster
+                # find nearest point to the center
                 oldImageNumber = None
-                for index, label in enumerate(classification.labels_):
-                    if label == targetLabel:
-                        oldImageNumber = allDescriptors[index]._referenceFrame
+                targetLabel = classification.labels_[-1]
+                X = allDescriptors[:-1]
+                if targetLabel in classification.labels_[:-1]:#esiste almeno un altro elemento assegnato
+                    centroid_of_cluster = classification.cluster_centers_[targetLabel]
+                    top = 0
+                    minError = scipy.spatial.distance.euclidean(X[top], centroid_of_cluster)
+                    for i, x in enumerate(X):
+                        if (classification.labels_[i] == targetLabel):
+                            error = scipy.spatial.distance.euclidean(x, centroid_of_cluster)
+                            if error < minError:
+                                minError = error
+                                top = i
+                    oldImageNumber = top
+
+                #OLD METHOD
+                #targetLabel = classification.labels_[-1]
+                #oldImageNumber = None
+                # for index, label in enumerate(classification.labels_[:-1]):
+                #
+                #     if label == targetLabel:
+                #         oldImageNumber = index
+
+                newImage = cv2.imread(dataset_folder + "/" + filename + "/rgbReg_frames/" + descriptor.realImageName(
+                                    descriptor._frame._frame_number) + ".jpg")
                 if oldImageNumber is not None:
-                    plt.imshow(cv2.imread(dataset_folder + "/" + filename + "/rgbReg_frames/" + descriptor.realImageName(
-                        oldImageNumber) + ".jpg"))
-                plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
-                plt.show()
+                    oldImage = cv2.imread("./savedFrames/" + descriptor.realImageName(oldImageNumber + 1) + ".jpg")
+                    self.showDoubleImage(oldImage, newImage)
+                else:
+                    self.showImage(newImage)
 
             classification = self.classify(allDescriptors, colors=colors, method=method)
 
             if self.ask_supervised():
                 X = np.stack(allDescriptors[i] for i in range(len(allDescriptors)))
                 self.save_people(filename=OUTPUT_FILE, people=X)
+            else:
+                self.removeLastNImages(len(descriptors))
+
             return allDescriptors, classification
         return [], None
 
@@ -234,3 +268,37 @@ class Kin:
 
     def load_people(self, filename):
         return np.loadtxt(filename)
+
+    def removeLastNImages(self, n):
+        names = [name for name in os.listdir(savedFrames_folder) if os.path.isfile(os.path.join(savedFrames_folder, name))][-n:]
+        for name in names:
+            os.remove(savedFrames_folder + '/' + name)
+
+    def saveRelevantFrame(self, descriptor):
+        rgbReg_frames = dataset_folder + '/' + descriptor._filename + '/rgbReg_frames'
+        if not os.path.exists(savedFrames_folder):
+            os.makedirs(savedFrames_folder)
+        counting = len([name for name in os.listdir(savedFrames_folder) if os.path.isfile(os.path.join(savedFrames_folder, name))])
+        str_frame_number = descriptor.realImageName(descriptor._frame._frame_number)
+        new_str_frame_number = descriptor.realImageName(counting + 1)
+        source = rgbReg_frames + '/' + str_frame_number + '.jpg'
+        destination = savedFrames_folder + '/' + new_str_frame_number + '.jpg'
+        shutil.copyfile(source, destination)
+
+    def showDoubleImage(self, img1, img2):
+        f = pylab.figure()
+        arr = np.asarray(img1)
+        f.add_subplot(1, 2, 1)
+        pylab.imshow(arr, cmap=cm.Greys_r)
+        pylab.title('From database')
+        arr = np.asarray(img2)
+        f.add_subplot(1, 2, 2)
+        pylab.imshow(arr, cmap=cm.Greys_r)
+        pylab.title('New image')
+        pylab.show()
+
+    def showImage(self, img):
+        arr = np.asarray(img)
+        pylab.imshow(arr, cmap=cm.Greys_r)
+        pylab.title('New person classified')
+        pylab.show()

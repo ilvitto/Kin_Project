@@ -1,8 +1,8 @@
 from matplotlib import pyplot as plt
 from Joint import Joint
 import cv2
+import scipy
 import numpy as np
-
 
 class Descriptor:
     usedJoints = [Joint.ShoulderLeft, Joint.SpineShoulder, Joint.SpineMid, Joint.SpineBase, Joint.ShoulderRight,
@@ -22,7 +22,6 @@ class Descriptor:
             self._leftLegLong = self.getLeftLegLong()
             self._rightLegLong = self.getRightLegLong()
             self._height = self.getHeight()
-
             self._clavicleLeft = self.getClavicleLeft()
             self._clavicleRight = self.getClavicleRight()
 
@@ -38,7 +37,6 @@ class Descriptor:
             self._leftLegLong = None
             self._rightLegLong = None
             self._height = None
-
             self._clavicleLeft = None
             self._clavicleRight = None
 
@@ -173,3 +171,6 @@ class Descriptor:
 
     def getColorFeature(self):
         return [self._chestColor[0], self._chestColor[1], self._chestColor[2]]
+
+    def descriptorDistance(self, descriptor):
+        return scipy.spatial.distance.euclidean(self.getFeatures(), descriptor.getFeatures())

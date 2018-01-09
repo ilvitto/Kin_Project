@@ -1,13 +1,16 @@
 from Descriptor import Descriptor
+from Frame import Frame
 import numpy as np
-
 
 class CheckNFrames:
 
     def __init__(self, frames = [], filename = None):
         self._frames = frames
+        self._filename = filename
         # self._descriptorAvg = self.getDescriptorAvg(frames)
         self._descriptorMedian = self.getDescriptorMedian(frames, filename)
+        self._descriptorMedian._frame = self.nearestFrameToMedianDescriptor()
+
 
     # def getDescriptorAvg(self, frames):
     #     descriptors = []
@@ -70,6 +73,7 @@ class CheckNFrames:
             clLefts.append(descr._clavicleLeft) if descr._clavicleLeft is not None else None
             clRights.append(descr._clavicleRight) if descr._clavicleRight is not None else None
             chestColor.append(descr._chestColor) if descr._chestColor is not None else None
+        descriptor._filename = self._filename
         descriptor._shoulderDistance = np.median(shoulderDistances) if len(shoulderDistances) > 0 else None
         descriptor._leftArmLong = np.median(leftArmLongs) if len(leftArmLongs) > 0 else None
         descriptor._rightArmLong = np.median(rightArmLongs) if len(rightArmLongs) > 0 else None
@@ -79,5 +83,14 @@ class CheckNFrames:
         descriptor._clavicleLeft = np.median(clLefts) if len(clLefts) > 0 else None
         descriptor._clavicleRight = np.median(clRights) if len(clRights) > 0 else None
         descriptor._chestColor = np.mean(chestColor, axis=(0)) if len(chestColor) > 0 else None
-        descriptor._referenceFrame = self._frames[0]._frame_number
         return descriptor
+
+    def nearestFrameToMedianDescriptor(self):
+        minDistance = self._descriptorMedian.descriptorDistance(Descriptor(self._frames[0], self._filename))
+        bestFrame = self._frames[0]
+        for frame in self._frames:
+            distance = self._descriptorMedian.descriptorDistance(Descriptor(frame, self._filename))
+            if distance < minDistance:
+                minDistance = distance
+                bestFrame = frame
+        return bestFrame
