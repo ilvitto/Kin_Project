@@ -17,3 +17,6 @@ class Point2D:
 
     def __str__(self):
         return "(" + str(self._x) + "," + str(self._y) + ")"
+
+    def asArray(self):
+        return self._x, self._y

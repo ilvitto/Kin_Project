@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import sys
+import time
 
 import cv2
 import scipy
@@ -33,13 +34,13 @@ class Kin:
         self._infoVideo = None
         self._frames = None
         self._filename = None
+        self._allDescriptors = None
 
-    def run(self, filename=None, colors=False, method=GAP):
+    def run(self, filename=None, colors=False, method=GAP, printDetails=True):
         # load dataset
         if (os.path.isfile(OUTPUT_FILE)):
-            allDescriptors = self.load_people(OUTPUT_FILE)
-        else:
-            allDescriptors = []
+            self._allDescriptors = self.load_people(OUTPUT_FILE)
+
         # self.load_all_datasets()
         self._filename = filename
         if filename is not None:
@@ -48,65 +49,56 @@ class Kin:
             descriptors = self.getDescriptors()
 
             print "Processing..."
+            all_classifications = []
             for descriptor in descriptors:
                 #Save relevant frame for each median descriptor
                 self.saveRelevantFrame(descriptor)
 
                 #First case for incompatible size
-                if allDescriptors == []:
-                    allDescriptors = [descriptor.getFeatures()]
+                if self._allDescriptors is None:
+                    self._allDescriptors = [descriptor.getFeatures()]
                 else:
                     if colors:
-                        allDescriptors = np.concatenate(
-                            (allDescriptors, [descriptor.getFeatures() + descriptor.getColorFeature()]))
+                        self._allDescriptors = np.concatenate(
+                            (self._allDescriptors, [descriptor.getFeatures() + descriptor.getColorFeature()]))
                     else:
-                        allDescriptors = np.concatenate((allDescriptors, [descriptor.getFeatures()]))
+                        self._allDescriptors = np.concatenate((self._allDescriptors, [descriptor.getFeatures()]))
 
-                classification = self.classify(allDescriptors, colors=colors, method=method)
+                classification = self.classify(self._allDescriptors, colors=colors, method=method)
+                all_classifications.append(classification)
                 print classification.labels_
 
-                # TODO: Choose the best image from saved Frames of index-cluster
-                # find nearest point to the center
-                oldImageNumber = None
                 targetLabel = classification.labels_[-1]
-                X = allDescriptors[:-1]
-                if targetLabel in classification.labels_[:-1]:#esiste almeno un altro elemento assegnato
-                    centroid_of_cluster = classification.cluster_centers_[targetLabel]
-                    top = 0
-                    minError = scipy.spatial.distance.euclidean(X[top], centroid_of_cluster)
-                    for i, x in enumerate(X):
-                        if (classification.labels_[i] == targetLabel):
-                            error = scipy.spatial.distance.euclidean(x, centroid_of_cluster)
-                            if error < minError:
-                                minError = error
-                                top = i
-                    oldImageNumber = top
+
+                oldImageNumber = self.nearestPointToCentroid(classification, targetLabel, self._allDescriptors[:-1])
 
                 #OLD METHOD
-                #targetLabel = classification.labels_[-1]
                 #oldImageNumber = None
                 # for index, label in enumerate(classification.labels_[:-1]):
-                #
                 #     if label == targetLabel:
                 #         oldImageNumber = index
 
                 newImage = cv2.imread(dataset_folder + "/" + filename + "/rgbReg_frames/" + descriptor.realImageName(
                                     descriptor._frame._frame_number) + ".jpg")
                 if oldImageNumber is not None:
-                    oldImage = cv2.imread("./savedFrames/" + descriptor.realImageName(oldImageNumber + 1) + ".jpg")
-                    self.showDoubleImage(oldImage, newImage)
+                    oldImage = cv2.imread(savedFrames_folder + "/" + descriptor.realImageName(oldImageNumber + 1) + ".jpg")
+                    self.showDoubleImage(oldImage, newImage, 'Recognition from database', 'New frame')
                 else:
-                    self.showImage(newImage)
+                    self.showImage(newImage, 'New person classified')
 
-            classification = self.classify(allDescriptors, colors=colors, method=method)
+            classification = self.classify(self._allDescriptors, colors=colors, method=method, printDetails=printDetails)
+
+            self.showVideo(descriptors, all_classifications)
+
+
 
             if self.ask_supervised():
-                X = np.stack(allDescriptors[i] for i in range(len(allDescriptors)))
+                X = np.stack(self._allDescriptors[i] for i in range(len(self._allDescriptors)))
                 self.save_people(filename=OUTPUT_FILE, people=X)
             else:
                 self.removeLastNImages(len(descriptors))
 
-            return allDescriptors, classification
+            return self._allDescriptors, classification
         return [], None
 
     def load_all_datasets(self):
@@ -171,13 +163,11 @@ class Kin:
     # TODO: Check color invariant
     def checkIfColorIsRelevant(self, classification, classification_with_color):
         # check if there are equal centroids excluding colors (last 3 features)
-
         pass
 
     def processFrames(self, frames):
         return CheckNFrames(frames, self._filename)._descriptorMedian
 
-    # TODO: SUPERVISED SAVED RESULTS
     def ask_supervised(self):
         sys.stdout.write("Do you want to save data classification? (y/n)")
         s = raw_input().lower()
@@ -185,13 +175,13 @@ class Kin:
             return True
         return False
 
-    def classify(self, descriptors, colors=False, method=GAP):
+    def classify(self, descriptors, colors=False, method=GAP, printDetails=True):
         if (method == GAP):
-            return self.classify_people_with_gap(descriptors, colors)
+            return self.classify_people_with_gap(descriptors, colors, printDetails)
         else:
-            return self.classify_people_with_threshold(descriptors, colors)
+            return self.classify_people_with_threshold(descriptors, colors, printDetails)
 
-    def classify_people_with_threshold(self, descriptors, printDetails=True):
+    def classify_people_with_threshold(self, descriptors, colors=False, printDetails=True):
         if printDetails: print "Using Elbow method with threshold..."
         X = np.stack(descriptors[i] for i in range(len(descriptors)))
         errors = []
@@ -221,7 +211,7 @@ class Kin:
         # plt.show()
         return classifications[best - 1]
 
-    def classify_people_with_gap(self, descriptors, printDetails=True):
+    def classify_people_with_gap(self, descriptors, colors=False, printDetails=True):
         if printDetails: print "Using GAP method..."
         X = np.stack(descriptors[i] for i in range(len(descriptors)))
         if printDetails: print "Finding best K..."
@@ -252,6 +242,20 @@ class Kin:
                         error = np.amax([scipy.spatial.distance.euclidean(x, y), error])
                 max_error = np.amax([error, max_error])
         return max_error
+
+    def nearestPointToCentroid(self, classification, targetLabel, X):
+        if targetLabel in classification.labels_[:-1]:  # esiste almeno un altro elemento assegnato
+            centroid_of_cluster = classification.cluster_centers_[targetLabel]
+            top = 0
+            minError = scipy.spatial.distance.euclidean(X[top], centroid_of_cluster)
+            for i, x in enumerate(X):
+                if (classification.labels_[i] == targetLabel):
+                    error = scipy.spatial.distance.euclidean(x, centroid_of_cluster)
+                    if error < minError:
+                        minError = error
+                        top = i
+            return top
+        return None
 
     def plot_feature(self, blocks):
         for block in blocks:
@@ -285,20 +289,73 @@ class Kin:
         destination = savedFrames_folder + '/' + new_str_frame_number + '.jpg'
         shutil.copyfile(source, destination)
 
-    def showDoubleImage(self, img1, img2):
+    def showDoubleImage(self, img1, img2, title1='Image 1', title2='Image 2'):
         f = pylab.figure()
         arr = np.asarray(img1)
         f.add_subplot(1, 2, 1)
-        pylab.imshow(arr, cmap=cm.Greys_r)
-        pylab.title('From database')
+        pylab.axis("off")
+        pylab.imshow(arr)
+        pylab.title(title1)
         arr = np.asarray(img2)
         f.add_subplot(1, 2, 2)
-        pylab.imshow(arr, cmap=cm.Greys_r)
-        pylab.title('New image')
+        pylab.imshow(arr)
+        pylab.title(title2)
         pylab.show()
 
-    def showImage(self, img):
+    def showImage(self, img, title='Figure'):
         arr = np.asarray(img)
-        pylab.imshow(arr, cmap=cm.Greys_r)
-        pylab.title('New person classified')
+        pylab.imshow(arr)
+        pylab.title(title)
         pylab.show()
+
+    def emptyDatabase(self):
+        if os.path.isfile(OUTPUT_FILE):
+            os.remove(OUTPUT_FILE)
+        for name in os.listdir(savedFrames_folder):
+            os.remove(savedFrames_folder + '/' + name)
+
+    def showVideo(self, descriptors, classifications):
+
+        cap = cv2.VideoCapture(dataset_folder + '/' + self._filename + '/rgbReg_video.mj2')
+
+        frame_number = 0
+        descriptor_number = 0
+        founded = False
+        first = True
+        n_frames = 0
+        identified = False
+        while (cap.isOpened() or frame_number > len(self._frames)-1):
+            ret, frame = cap.read()
+
+            if self._frames[frame_number]._face is not None:
+                cv2.rectangle(frame, (self._frames[frame_number]._face._boundingBox._lu.asArray()), (self._frames[frame_number]._face._boundingBox._rb.asArray()), (0, 255, 0), 3)
+                founded = True
+                n_frames += 1
+                X = []
+                for descr in descriptors[:descriptor_number]:
+                    X.append(descr.getFeatures())
+                i_best = self.nearestPointToCentroid(classifications[descriptor_number],classifications[descriptor_number].labels_[-1],X)
+                if i_best is not None and first:
+                    image = cv2.imread(dataset_folder + "/" + self._filename + "/rgbReg_frames/" + descriptors[0].realImageName(descriptors[i_best]._frame._frame_number) + ".jpg")
+                    self.showImage(image, 'Person recognized')
+                    first = False
+                    identified = True
+                elif not identified:
+                    cv2.putText(frame, "New Person identified", (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
+
+            else:
+                if founded:
+                    descriptor_number += 1
+                    first = True
+                    identified = False
+                founded = False
+                n_frames = 0
+            cv2.imshow('Video', frame)
+
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
+            frame_number += 1
+
+        cap.release()
+        cv2.destroyAllWindows()
