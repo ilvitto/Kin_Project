@@ -10,6 +10,8 @@ class Descriptor:
                   Joint.WristLeft, Joint.WristRight, Joint.Head, Joint.Neck, Joint.HipLeft, Joint.HipRight,
                   Joint.KneeLeft, Joint.KneeRight, Joint.AnkleLeft, Joint.AnkleRight, Joint.Neck]
 
+    featuresLimit = [0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1]
+
     def __init__(self, frame=None, filename=None):
         if (frame is not None and frame._body is not None):
             self._frame = frame
@@ -169,8 +171,12 @@ class Descriptor:
         return [self._shoulderDistance, self._leftArmLong, self._rightArmLong \
             , self._leftLegLong, self._rightLegLong, self._height, self._clavicleLeft, self._clavicleRight]
 
+    #TODO: Normalize values
     def getColorFeature(self):
         return [self._chestColor[0], self._chestColor[1], self._chestColor[2]]
 
     def descriptorDistance(self, descriptor):
         return scipy.spatial.distance.euclidean(self.getFeatures(), descriptor.getFeatures())
+
+    def isNearTo(self, descriptor):
+        return (np.array(self.getFeatures()-np.array(descriptor.getFeatures()))<Descriptor.featuresLimit).all()

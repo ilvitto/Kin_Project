@@ -37,9 +37,13 @@ class Kin:
         self._allDescriptors = None
 
     def run(self, filename=None, colors=False, method=GAP, printDetails=True):
+        # check choherence between stored images and dataset file
+        self.checkCoherence()
+
         # load dataset
         if (os.path.isfile(OUTPUT_FILE)):
             self._allDescriptors = self.load_people(OUTPUT_FILE)
+            print "Dataset: ",len(self._allDescriptors)
 
         # self.load_all_datasets()
         self._filename = filename
@@ -273,6 +277,27 @@ class Kin:
     def load_people(self, filename):
         return np.loadtxt(filename)
 
+    def checkCoherence(self):
+        num_dataset = len(np.loadtxt(OUTPUT_FILE))
+        num_images = len(os.listdir(savedFrames_folder))
+        if num_dataset != num_images:
+            print "Found corrupted database!"
+            print "Dataset: ", num_dataset
+            print "Images: ", num_images
+            if num_images > num_dataset:
+                sys.stdout.write("Do you want I try to repair it? (y/n)")
+                s = raw_input().lower()
+                if s == "y" or s == "Yes":
+                    self.removeLastNImages(num_images - num_dataset)
+                    return
+            sys.stdout.write("Do you want to delete all data? (y/n)")
+            s = raw_input().lower()
+            if s == "y" or s == "Yes":
+                self.emptyDatabase()
+            else:
+                sys.exit()
+        return
+
     def removeLastNImages(self, n):
         names = [name for name in os.listdir(savedFrames_folder) if os.path.isfile(os.path.join(savedFrames_folder, name))][-n:]
         for name in names:
@@ -314,6 +339,7 @@ class Kin:
         for name in os.listdir(savedFrames_folder):
             os.remove(savedFrames_folder + '/' + name)
 
+    #TODO: To fix for second or third videos
     def showVideo(self, descriptors, classifications):
 
         cap = cv2.VideoCapture(dataset_folder + '/' + self._filename + '/rgbReg_video.mj2')
@@ -324,14 +350,14 @@ class Kin:
         first = True
         n_frames = 0
         identified = False
-        while (cap.isOpened() or frame_number > len(self._frames)-1):
+        while cap.isOpened() and frame_number < len(self._frames):
             ret, frame = cap.read()
 
             if self._frames[frame_number]._face is not None:
                 cv2.rectangle(frame, (self._frames[frame_number]._face._boundingBox._lu.asArray()), (self._frames[frame_number]._face._boundingBox._rb.asArray()), (0, 255, 0), 3)
                 founded = True
                 n_frames += 1
-                X = []
+                X = self._allDescriptors
                 for descr in descriptors[:descriptor_number]:
                     X.append(descr.getFeatures())
                 i_best = self.nearestPointToCentroid(classifications[descriptor_number],classifications[descriptor_number].labels_[-1],X)
