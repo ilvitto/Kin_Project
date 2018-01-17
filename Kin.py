@@ -37,6 +37,8 @@ class Kin:
         self._allDescriptors = None
 
     def run(self, filename=None, colors=False, method=GAP, printDetails=True):
+        classification = None
+
         # check choherence between stored images and dataset file
         self.checkCoherence()
 
@@ -68,7 +70,16 @@ class Kin:
                     else:
                         self._allDescriptors = np.concatenate((self._allDescriptors, [descriptor.getFeatures()]))
 
-                classification = self.classify(self._allDescriptors, colors=colors, method=method)
+                if len(self._allDescriptors) == 1:
+                    classification = KMeans(n_clusters=1, random_state=0).fit(self._allDescriptors)
+                elif len(self._allDescriptors) == 2:
+                    if descriptor.isNearTo(self._allDescriptors[0]):
+                        classification = KMeans(n_clusters=1, random_state=0).fit(self._allDescriptors)
+                    else:
+                        classification = KMeans(n_clusters=2, random_state=0).fit(self._allDescriptors)
+                else:
+                    classification = self.classify(self._allDescriptors, colors=colors, method=method)
+
                 all_classifications.append(classification)
                 print classification.labels_
 
@@ -87,17 +98,20 @@ class Kin:
                 # else:
                 #     self.showImage(newImage, 'New person classified')
 
-            classification = self.classify(self._allDescriptors, colors=colors, method=method, printDetails=printDetails)
+            if len(descriptors) > 0:
+                classification = self.classify(self._allDescriptors, colors=colors, method=method, printDetails=printDetails)
 
-            if self.ask_supervised():
-                X = np.stack(self._allDescriptors[i] for i in range(len(self._allDescriptors)))
-                self.save_people(filename=OUTPUT_FILE, people=X)
-            else:
-                self.removeLastNImages(len(descriptors))
+            # SHOW VIDEO
+            if self._allDescriptors is not None:
+                #self.showVideo(descriptors, all_classifications)
+                self.showVideo2(self._allDescriptors, descriptors, all_classifications)
 
-            #SHOW VIDEO
-            #self.showVideo(descriptors, all_classifications)
-            self.showVideo2(self._allDescriptors, descriptors, all_classifications)
+            if len(descriptors) > 0:
+                if self.ask_supervised():
+                    X = np.stack(self._allDescriptors[i] for i in range(len(self._allDescriptors)))
+                    self.save_people(filename=OUTPUT_FILE, people=X)
+                else:
+                    self.removeLastNImages(len(descriptors))
 
 
 
@@ -254,11 +268,34 @@ class Kin:
             for i, x in enumerate(X[:-1]):
                 if (classification.labels_[i] == targetLabel):
                     error = scipy.spatial.distance.euclidean(x, centroid_of_cluster)
-                    if error < minError:
+                    if error <= minError:
                         minError = error
                         top = i
             return top
         return None
+
+    #Restituisce il punto piu vicino a X[point_index] tra i punti dello stesso cluster
+    def nearestPointSameCluster(self, classification, X, point_index):
+        top = None
+        minError = scipy.spatial.distance.euclidean(X[0], X[point_index])
+        for i, x in enumerate(X[:-1]):
+            if (classification.labels_[i] == classification.labels_[point_index]):
+                error = scipy.spatial.distance.euclidean(x, X[point_index])
+                if error <= minError:
+                    minError = error
+                    top = i
+        return top
+
+    #Restituisce il punto piu vicino
+    def nearestPoint(self, X, point_index):
+        top = None
+        minError = scipy.spatial.distance.euclidean(X[0], X[point_index])
+        for i, x in enumerate(X[:-1]):
+            error = scipy.spatial.distance.euclidean(x, X[point_index])
+            if error <= minError:
+                minError = error
+                top = i
+        return top
 
     def plot_feature(self, blocks):
         for block in blocks:
@@ -343,7 +380,6 @@ class Kin:
             os.remove(savedFrames_folder + '/' + name)
 
     def showVideo2(self, allFeaturesDescriptors, newDescriptors, classifications):
-
         frame_number = 0
         recognized = False
         descriptor_number = 0
@@ -359,12 +395,18 @@ class Kin:
                 unique, counts = np.unique(classifications[descriptor_number].labels_, return_counts=True)
                 #Founded a match
                 if dict(zip(unique, counts))[classifications[descriptor_number].labels_[-1]] > 1:
-                    i_best = self.nearestPointToCentroid(classifications[descriptor_number],
-                                                     classifications[descriptor_number].labels_[-1], X)
+                    #i_best = self.nearestPointToCentroid(classifications[descriptor_number], classifications[descriptor_number].labels_[-1], X)
+                    i_best = self.nearestPointSameCluster(classifications[descriptor_number],X,len(X)-1)
+
+                    #TODO: compute accuracy method
+                    accuracy = 100-(newDescriptors[0].euclideanFeaturesDistance(X[i_best], X[-1])-Descriptor.euclideanThreshold)*100
+
+                    cv2.putText(frame, "Recognized "+str(accuracy)+"%", (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
                     image = cv2.imread(savedFrames_folder + "/" + newDescriptors[0].realImageName(i_best+1) + ".jpg")
                     cv2.imshow('Person recognized', image)
                 #New person identified
                 else:
+                    cv2.putText(frame, "New person", (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
                     image = cv2.imread(dataset_folder + "/new-person.jpg")
                     cv2.imshow('Person recognized', image)
             else:

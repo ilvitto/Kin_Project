@@ -34,9 +34,10 @@ def show(img):
 dataset1 = "0064"
 dataset2 = "0068"
 dataset3 = "0070"
+dataset4 = "0065"
 
 kin1 = Kin.Kin()
-desc1, classification1 = kin1.run(dataset1)
+desc1, classification1 = kin1.run(dataset2)
 
 
 # kin2 = Kin.Kin()

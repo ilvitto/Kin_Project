@@ -12,6 +12,8 @@ class Descriptor:
 
     featuresLimit = [0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1]
 
+    euclideanThreshold = 0.0175
+
     def __init__(self, frame=None, filename=None):
         if (frame is not None and frame._body is not None):
             self._frame = frame
@@ -178,5 +180,12 @@ class Descriptor:
     def descriptorDistance(self, descriptor):
         return scipy.spatial.distance.euclidean(self.getFeatures(), descriptor.getFeatures())
 
-    def isNearTo(self, descriptor):
-        return (np.array(self.getFeatures()-np.array(descriptor.getFeatures()))<Descriptor.featuresLimit).all()
+    def isNearTo(self, descriptorFeatures):
+        #return (np.array(self.getFeatures())-np.array(descriptorFeatures) < Descriptor.featuresLimit).all()
+        return self.euclideanFeaturesDistance(descriptorFeatures) < Descriptor.euclideanThreshold
+
+    def euclideanFeaturesDistance(self, descriptorFeatures, descriptorFeatures2 = None):
+        if(descriptorFeatures2 is None):
+            return scipy.spatial.distance.euclidean(self.getFeatures(), descriptorFeatures)
+        else:
+            return scipy.spatial.distance.euclidean(descriptorFeatures, descriptorFeatures2)
