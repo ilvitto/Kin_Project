@@ -72,35 +72,34 @@ class Kin:
                 all_classifications.append(classification)
                 print classification.labels_
 
-                targetLabel = classification.labels_[-1]
-
-                oldImageNumber = self.nearestPointToCentroid(classification, targetLabel, self._allDescriptors[:-1])
-
-                #OLD METHOD
-                #oldImageNumber = None
-                # for index, label in enumerate(classification.labels_[:-1]):
-                #     if label == targetLabel:
-                #         oldImageNumber = index
-
-                newImage = cv2.imread(dataset_folder + "/" + filename + "/rgbReg_frames/" + descriptor.realImageName(
-                                    descriptor._frame._frame_number) + ".jpg")
-                if oldImageNumber is not None:
-                    oldImage = cv2.imread(savedFrames_folder + "/" + descriptor.realImageName(oldImageNumber + 1) + ".jpg")
-                    self.showDoubleImage(oldImage, newImage, 'Recognition from database', 'New frame')
-                else:
-                    self.showImage(newImage, 'New person classified')
+                # PRINT DOUBLE IMAGES
+                # targetLabel = classification.labels_[-1]
+                #
+                # oldImageNumber = None
+                # unique, counts = np.unique(classification.labels_, return_counts=True)
+                # if dict(zip(unique, counts))[targetLabel] > 1:
+                #     oldImageNumber = self.nearestPointToCentroid(classification, targetLabel, self._allDescriptors)
+                #
+                # newImage = cv2.imread(dataset_folder + "/" + filename + "/rgbReg_frames/" + descriptor.realImageName(descriptor._frame._frame_number) + ".jpg")
+                # if oldImageNumber is not None:
+                #     oldImage = cv2.imread(savedFrames_folder + "/" + descriptor.realImageName(oldImageNumber + 1) + ".jpg")
+                #     self.showDoubleImage(oldImage, newImage, 'Recognition from database', 'New frame')
+                # else:
+                #     self.showImage(newImage, 'New person classified')
 
             classification = self.classify(self._allDescriptors, colors=colors, method=method, printDetails=printDetails)
-
-            self.showVideo(descriptors, all_classifications)
-
-
 
             if self.ask_supervised():
                 X = np.stack(self._allDescriptors[i] for i in range(len(self._allDescriptors)))
                 self.save_people(filename=OUTPUT_FILE, people=X)
             else:
                 self.removeLastNImages(len(descriptors))
+
+            #SHOW VIDEO
+            #self.showVideo(descriptors, all_classifications)
+            self.showVideo2(self._allDescriptors, descriptors, all_classifications)
+
+
 
             return self._allDescriptors, classification
         return [], None
@@ -248,11 +247,11 @@ class Kin:
         return max_error
 
     def nearestPointToCentroid(self, classification, targetLabel, X):
-        if targetLabel in classification.labels_[:-1]:  # esiste almeno un altro elemento assegnato
+        if targetLabel in classification.labels_:  # esiste almeno un altro elemento assegnato
             centroid_of_cluster = classification.cluster_centers_[targetLabel]
-            top = 0
-            minError = scipy.spatial.distance.euclidean(X[top], centroid_of_cluster)
-            for i, x in enumerate(X):
+            top = None
+            minError = scipy.spatial.distance.euclidean(X[0], centroid_of_cluster)
+            for i, x in enumerate(X[:-1]):
                 if (classification.labels_[i] == targetLabel):
                     error = scipy.spatial.distance.euclidean(x, centroid_of_cluster)
                     if error < minError:
@@ -278,6 +277,10 @@ class Kin:
         return np.loadtxt(filename)
 
     def checkCoherence(self):
+        if (not os.path.isfile(OUTPUT_FILE)):
+            if(len(os.listdir(savedFrames_folder)) > 0):
+                self.emptyDatabase()
+            return
         num_dataset = len(np.loadtxt(OUTPUT_FILE))
         num_images = len(os.listdir(savedFrames_folder))
         if num_dataset != num_images:
@@ -339,6 +342,46 @@ class Kin:
         for name in os.listdir(savedFrames_folder):
             os.remove(savedFrames_folder + '/' + name)
 
+    def showVideo2(self, allFeaturesDescriptors, newDescriptors, classifications):
+
+        frame_number = 0
+        recognized = False
+        descriptor_number = 0
+        cap = cv2.VideoCapture(dataset_folder + '/' + self._filename + '/rgbReg_video.mj2')
+        while cap.isOpened() and frame_number < len(self._frames):
+            ret, frame = cap.read()
+
+            X = allFeaturesDescriptors[:len(allFeaturesDescriptors)-len(newDescriptors) + 1 + descriptor_number]
+            if self._frames[frame_number]._face is not None and descriptor_number < len(classifications):
+                recognized = True
+                cv2.rectangle(frame, (self._frames[frame_number]._face._boundingBox._lu.asArray()),
+                          (self._frames[frame_number]._face._boundingBox._rb.asArray()), (0, 255, 0), 3)
+                unique, counts = np.unique(classifications[descriptor_number].labels_, return_counts=True)
+                #Founded a match
+                if dict(zip(unique, counts))[classifications[descriptor_number].labels_[-1]] > 1:
+                    i_best = self.nearestPointToCentroid(classifications[descriptor_number],
+                                                     classifications[descriptor_number].labels_[-1], X)
+                    image = cv2.imread(savedFrames_folder + "/" + newDescriptors[0].realImageName(i_best+1) + ".jpg")
+                    cv2.imshow('Person recognized', image)
+                #New person identified
+                else:
+                    image = cv2.imread(dataset_folder + "/new-person.jpg")
+                    cv2.imshow('Person recognized', image)
+            else:
+                #First exit of the subject
+                if recognized:
+                    recognized = False
+                    descriptor_number += 1
+                image = cv2.imread(dataset_folder + "/unknown.jpg")
+                cv2.imshow('Person recognized', image)
+            cv2.imshow('Video', frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+            frame_number += 1
+        cap.release()
+        cv2.destroyAllWindows()
+
+
     #TODO: To fix for second or third videos
     def showVideo(self, descriptors, classifications):
 
@@ -357,23 +400,32 @@ class Kin:
                 cv2.rectangle(frame, (self._frames[frame_number]._face._boundingBox._lu.asArray()), (self._frames[frame_number]._face._boundingBox._rb.asArray()), (0, 255, 0), 3)
                 founded = True
                 n_frames += 1
-                X = self._allDescriptors
-                for descr in descriptors[:descriptor_number]:
-                    X.append(descr.getFeatures())
-                i_best = self.nearestPointToCentroid(classifications[descriptor_number],classifications[descriptor_number].labels_[-1],X)
+                X = self._allDescriptors[:descriptor_number+1]
+                # for descr in descriptors[:descriptor_number]:
+                #     X.append(descr.getFeatures())
+                i_best = None
+                unique, counts = np.unique(classifications[descriptor_number].labels_, return_counts=True)
+                if dict(zip(unique, counts))[classifications[descriptor_number].labels_[-1]] > 1:
+                    i_best = self.nearestPointToCentroid(classifications[descriptor_number],classifications[descriptor_number].labels_[-1],X)
                 if i_best is not None and first:
                     image = cv2.imread(dataset_folder + "/" + self._filename + "/rgbReg_frames/" + descriptors[0].realImageName(descriptors[i_best]._frame._frame_number) + ".jpg")
-                    self.showImage(image, 'Person recognized')
+                    cv2.imshow('Person recognized', image)
+                    #self.showImage(image, 'Person recognized')
                     first = False
                     identified = True
                 elif not identified:
                     cv2.putText(frame, "New Person identified", (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
+                    image = cv2.imread(dataset_folder + "/new-person.jpg")
+                    cv2.imshow('Person recognized', image)
 
             else:
                 if founded:
                     descriptor_number += 1
                     first = True
                     identified = False
+                #show unknown image
+                image = cv2.imread(dataset_folder + "/unknown.jpg")
+                cv2.imshow('Person recognized', image)
                 founded = False
                 n_frames = 0
             cv2.imshow('Video', frame)

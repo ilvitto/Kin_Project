@@ -36,7 +36,7 @@ dataset2 = "0068"
 dataset3 = "0070"
 
 kin1 = Kin.Kin()
-desc1, classification1 = kin1.run(dataset3)
+desc1, classification1 = kin1.run(dataset1)
 
 
 # kin2 = Kin.Kin()
