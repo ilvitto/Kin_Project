@@ -10,10 +10,14 @@ class Descriptor:
                   Joint.WristLeft, Joint.WristRight, Joint.Head, Joint.Neck, Joint.HipLeft, Joint.HipRight,
                   Joint.KneeLeft, Joint.KneeRight, Joint.AnkleLeft, Joint.AnkleRight, Joint.Neck]
 
-    featuresLimit = [0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1]
 
-    euclideanThreshold = 0.0175
+    featuresLimit = [0.05,0.05,0.05,0.08,0.08,0.12,0.03,0.05]
+    colorLimit = [0.05, 0.05, 0.05]
 
+    euclideanThreshold = 0.08
+
+
+    #TODO: normalizzare l'altezza per il calcolo delle features?
     def __init__(self, frame=None, filename=None):
         if (frame is not None and frame._body is not None):
             self._frame = frame
@@ -108,8 +112,10 @@ class Descriptor:
         return head + chest + (leftLeg + rightLeg) / 2 if (
             head is not None and chest is not None and rightLeg is not None and leftLeg is not None) else None
 
-    # TODO: Remove dependece with dataset
     def getChestColor(self):
+        r = 0
+        g = 0
+        b = 0
         if self._joints is not None and self._joints[Joint.SpineMid].isTracked():
             str_frame_number = self.realImageName(self._frame._frame_number)
 
@@ -181,11 +187,27 @@ class Descriptor:
         return scipy.spatial.distance.euclidean(self.getFeatures(), descriptor.getFeatures())
 
     def isNearTo(self, descriptorFeatures):
-        #return (np.array(self.getFeatures())-np.array(descriptorFeatures) < Descriptor.featuresLimit).all()
-        return self.euclideanFeaturesDistance(descriptorFeatures) < Descriptor.euclideanThreshold
+        return abs(self.featuresDistance(descriptorFeatures)) < abs(Descriptor.euclideanThreshold)
 
-    def euclideanFeaturesDistance(self, descriptorFeatures, descriptorFeatures2 = None):
-        if(descriptorFeatures2 is None):
+    def isNearToEachFeatures(self, descriptorFeatures, colorFeatures=None):
+        if colorFeatures is None:
+            v1 = np.array(self.getFeatures())
+            v2 = np.array(descriptorFeatures)
+            limit = Descriptor.featuresLimit
+        else:
+            v1 = np.concatenate([np.array(self.getFeatures()), np.array(self.getColorFeature())])
+            v2 = np.concatenate([np.array(descriptorFeatures), colorFeatures])
+            limit = np.concatenate([np.array(Descriptor.featuresLimit), np.array(Descriptor.colorLimit)])
+        return (np.absolute(v1-v2) < limit).all()
+
+    def featuresDistance(self, descriptorFeatures, descriptorFeatures2 = None):
+        if descriptorFeatures2 is None:
             return scipy.spatial.distance.euclidean(self.getFeatures(), descriptorFeatures)
         else:
             return scipy.spatial.distance.euclidean(descriptorFeatures, descriptorFeatures2)
+
+    def distancePerFeatures(self, descriptorFeatures, descriptorFeatures2=None):
+        if descriptorFeatures2 is None:
+            return self.getFeatures - descriptorFeatures
+        else:
+            return descriptorFeatures - descriptorFeatures2

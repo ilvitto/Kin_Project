@@ -73,10 +73,19 @@ class Kin:
                 if len(self._allDescriptors) == 1:
                     classification = KMeans(n_clusters=1, random_state=0).fit(self._allDescriptors)
                 elif len(self._allDescriptors) == 2:
-                    if descriptor.isNearTo(self._allDescriptors[0]):
-                        classification = KMeans(n_clusters=1, random_state=0).fit(self._allDescriptors)
+                    #TODO: Da gestire l'inclusione del colore: MOLTO MEGLIO ma solo se STESSO VIDEO
+                    #STESSO VIDEO!! DAVVERO?
+                    if(descriptors.index(descriptor) == 1):
+                        print 'Using color too...'
+                        if descriptor.isNearToEachFeatures(self._allDescriptors[0], descriptors[0].getColorFeature()):
+                            classification = KMeans(n_clusters=1, random_state=0).fit(self._allDescriptors)
+                        else:
+                            classification = KMeans(n_clusters=2, random_state=0).fit(self._allDescriptors)
                     else:
-                        classification = KMeans(n_clusters=2, random_state=0).fit(self._allDescriptors)
+                        if descriptor.isNearToEachFeatures(self._allDescriptors[0]):
+                            classification = KMeans(n_clusters=1, random_state=0).fit(self._allDescriptors)
+                        else:
+                            classification = KMeans(n_clusters=2, random_state=0).fit(self._allDescriptors)
                 else:
                     classification = self.classify(self._allDescriptors, colors=colors, method=method)
 
@@ -141,9 +150,6 @@ class Kin:
             frame = Frame(face, faceHD, body, frame_i)
             self._frames.append(frame)
 
-    # TODO    if len(descriptors) == 1 -> median descriptor
-    # TODO    if len(descriptors) == 2 -> classify with thresholds per features/limit error/range values
-    # TODO    if len(descriptors) > 3 -> KMeans
     def getDescriptors(self):
         print "Number of frame: " + str(len(self._frames))
 
@@ -369,6 +375,7 @@ class Kin:
 
     def showImage(self, img, title='Figure'):
         arr = np.asarray(img)
+        pylab.axis("off")
         pylab.imshow(arr)
         pylab.title(title)
         pylab.show()
@@ -397,13 +404,13 @@ class Kin:
                 if dict(zip(unique, counts))[classifications[descriptor_number].labels_[-1]] > 1:
                     #i_best = self.nearestPointToCentroid(classifications[descriptor_number], classifications[descriptor_number].labels_[-1], X)
                     i_best = self.nearestPointSameCluster(classifications[descriptor_number],X,len(X)-1)
-
                     #TODO: compute accuracy method
-                    accuracy = 100-(newDescriptors[0].euclideanFeaturesDistance(X[i_best], X[-1])-Descriptor.euclideanThreshold)*100
+                    # accuracy = 100-(newDescriptors[0].featuresDistance(X[i_best], X[-1])-Descriptor.euclideanThreshold)*100
 
-                    cv2.putText(frame, "Recognized "+str(accuracy)+"%", (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                    cv2.putText(frame, "Recognized ", (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
                     image = cv2.imread(savedFrames_folder + "/" + newDescriptors[0].realImageName(i_best+1) + ".jpg")
                     cv2.imshow('Person recognized', image)
+
                 #New person identified
                 else:
                     cv2.putText(frame, "New person", (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
