@@ -27,6 +27,7 @@ GAP = "gap"
 THRESH = "thresh"
 
 OUTPUT_FILE = "learned_people.txt"
+NUM_CLUSTERS = "num_clusters.txt"
 
 
 class Kin:
@@ -38,13 +39,15 @@ class Kin:
 
     def run(self, filename=None, colors=False, method=GAP, printDetails=True):
         classification = None
+        oldClusters = 0
 
         # check choherence between stored images and dataset file
         self.checkCoherence()
 
         # load dataset
-        if (os.path.isfile(OUTPUT_FILE)):
-            self._allDescriptors = self.load_people(OUTPUT_FILE)
+        if (os.path.isfile(OUTPUT_FILE) and os.path.isfile(NUM_CLUSTERS)):
+
+            self._allDescriptors, oldClusters = self.load_people(OUTPUT_FILE, NUM_CLUSTERS)
             print "Dataset: ",len(self._allDescriptors)
 
         # self.load_all_datasets()
@@ -97,9 +100,10 @@ class Kin:
                     #     else:
                     #         classification = KMeans(n_clusters=2, random_state=0).fit(self._allDescriptors).labels_
                 else:
-                    classification = self.classify(self._allDescriptors, colors=colors, method=method)
+                    classification = self.classify(self._allDescriptors, oldClusters, colors=colors, method=method)
 
                 all_classifications.append(classification)
+                oldClusters = len(set(classification))
                 print classification
 
                 # PRINT DOUBLE IMAGES
@@ -118,7 +122,7 @@ class Kin:
                 #     self.showImage(newImage, 'New person classified')
 
             if len(descriptors) > 0:
-                classification = self.classify(self._allDescriptors, colors=colors, method=method, printDetails=printDetails)
+                classification = self.classify(self._allDescriptors, oldClusters,  colors=colors, method=method, printDetails=printDetails)
 
             # SHOW VIDEO
             if self._allDescriptors is not None:
@@ -129,6 +133,7 @@ class Kin:
                 if self.ask_supervised():
                     X = np.stack(self._allDescriptors[i] for i in range(len(self._allDescriptors)))
                     self.save_people(filename=OUTPUT_FILE, people=X)
+                    self.save_people(filename=NUM_CLUSTERS, people=np.array([len(set(classification))]))
                 else:
                     self.removeLastNImages(len(descriptors))
 
@@ -213,9 +218,9 @@ class Kin:
             return True
         return False
 
-    def classify(self, descriptors, colors=False, method=GAP, printDetails=True):
+    def classify(self, descriptors, oldClusters, colors=False, method=GAP, printDetails=True):
         if (method == GAP):
-            return self.classify_people_with_gap(descriptors, colors, printDetails)
+            return self.classify_people_with_gap(descriptors, oldClusters, colors, printDetails)
         else:
             return self.classify_people_with_threshold(descriptors, colors, printDetails)
 
@@ -249,11 +254,11 @@ class Kin:
         # plt.show()
         return classifications[best - 1]
 
-    def classify_people_with_gap(self, descriptors, colors=False, printDetails=True):
+    def classify_people_with_gap(self, descriptors, oldClusters, colors=False, printDetails=True):
         if printDetails: print "Using GAP method..."
         X = np.stack(descriptors[i] for i in range(len(descriptors)))
         if printDetails: print "Finding best K..."
-        gaps, s_k, K = gap.gap_statistic(X, refs=None, B=10, K=range(1, len(descriptors) + 1), N_init=10)
+        gaps, s_k, K = gap.gap_statistic(X, refs=None, B=10, K=range(np.maximum(1,oldClusters-2), np.minimum(len(descriptors + 1), oldClusters + 2)), N_init=10)
         bestKValue = gap.find_optimal_k(gaps, s_k, K)
         if printDetails: print "Optimal K -> ", bestKValue, " of ", len(descriptors)
         classification = KMeans(n_clusters=bestKValue, random_state=0).fit(X).labels_
@@ -331,8 +336,10 @@ class Kin:
     def save_people(self, filename, people):
         np.savetxt(filename, people)
 
-    def load_people(self, filename):
-        return np.loadtxt(filename)
+    def load_people(self, filename, filename2):
+        db = np.loadtxt(filename)
+        oldClusters = int(np.loadtxt(filename2))
+        return db, oldClusters
 
     def checkCoherence(self):
         if (not os.path.isfile(OUTPUT_FILE)):
@@ -398,6 +405,8 @@ class Kin:
     def emptyDatabase(self):
         if os.path.isfile(OUTPUT_FILE):
             os.remove(OUTPUT_FILE)
+        if os.path.isfile(NUM_CLUSTERS):
+            os.remove(NUM_CLUSTERS)
         for name in os.listdir(savedFrames_folder):
             os.remove(savedFrames_folder + '/' + name)
 
