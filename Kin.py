@@ -71,26 +71,36 @@ class Kin:
                         self._allDescriptors = np.concatenate((self._allDescriptors, [descriptor.getFeatures()]))
 
                 if len(self._allDescriptors) == 1:
-                    classification = KMeans(n_clusters=1, random_state=0).fit(self._allDescriptors)
-                elif len(self._allDescriptors) == 2:
+                    classification = KMeans(n_clusters=1, random_state=0).fit(self._allDescriptors).labels_
+                elif len(self._allDescriptors) < 4:
                     #TODO: Da gestire l'inclusione del colore: MOLTO MEGLIO ma solo se STESSO VIDEO
                     #STESSO VIDEO!! DAVVERO?
-                    if(descriptors.index(descriptor) == 1):
-                        print 'Using color too...'
-                        if descriptor.isNearToEachFeatures(self._allDescriptors[0], descriptors[0].getColorFeature()):
-                            classification = KMeans(n_clusters=1, random_state=0).fit(self._allDescriptors)
-                        else:
-                            classification = KMeans(n_clusters=2, random_state=0).fit(self._allDescriptors)
-                    else:
-                        if descriptor.isNearToEachFeatures(self._allDescriptors[0]):
-                            classification = KMeans(n_clusters=1, random_state=0).fit(self._allDescriptors)
-                        else:
-                            classification = KMeans(n_clusters=2, random_state=0).fit(self._allDescriptors)
+                    best_match = 0
+                    for i, oldDesc in enumerate(self._allDescriptors[:-1]):
+                        if(descriptor.featuresDistance(descriptor.getFeatures(), oldDesc) <
+                               descriptor.featuresDistance(descriptor.getFeatures(), self._allDescriptors[best_match])):
+                            best_match = i
+                    if descriptor.isNearToEachFeatures(self._allDescriptors[best_match]):
+                        classification = np.zeros(len(self._allDescriptors))
+                        classification[-1] = 1
+                        classification[best_match] = 1
+
+                    # if(descriptors.index(descriptor) == 1):
+                    #     print 'Using color too...'
+                    #     if descriptor.isNearToEachFeatures(self._allDescriptors[0], descriptors[0].getColorFeature()):
+                    #         classification = KMeans(n_clusters=1, random_state=0).fit(self._allDescriptors).labels_
+                    #     else:
+                    #         classification = KMeans(n_clusters=2, random_state=0).fit(self._allDescriptors).labels_
+                    # else:
+                    #     if descriptor.isNearToEachFeatures(self._allDescriptors[0]):
+                    #         classification = KMeans(n_clusters=1, random_state=0).fit(self._allDescriptors).labels_
+                    #     else:
+                    #         classification = KMeans(n_clusters=2, random_state=0).fit(self._allDescriptors).labels_
                 else:
                     classification = self.classify(self._allDescriptors, colors=colors, method=method)
 
                 all_classifications.append(classification)
-                print classification.labels_
+                print classification
 
                 # PRINT DOUBLE IMAGES
                 # targetLabel = classification.labels_[-1]
@@ -176,6 +186,11 @@ class Kin:
                 currentFrames = []
                 needNewBlock = True
 
+        for descriptor in descriptors:
+            for descriptor2 in descriptors:
+                print descriptor.distancePerFeatures(np.array(descriptor.getFeatures()), np.array(descriptor2.getFeatures())), "...", \
+                    descriptor.isNearToEachFeatures(np.array(descriptor2.getFeatures()))
+
         if descriptors == []:
             print "No descriptors founded in the video #" + self._filename
         else:
@@ -211,7 +226,7 @@ class Kin:
         errorsPerCent = []
         classifications = []
         for i in range(len(descriptors)):
-            classification = KMeans(n_clusters=i + 1, random_state=0).fit(X)
+            classification = KMeans(n_clusters=i + 1, random_state=0).fit(X).labels_
             error = self.intraClusterDistanceCentroids(classification, X)
             classifications.append(classification)
             errors.append(error)
@@ -229,7 +244,7 @@ class Kin:
                 best = i
                 break
         if printDetails: print "Optimal K -> ", best
-        if printDetails: print "Labels -> ", classifications[best - 1].labels_
+        if printDetails: print "Labels -> ", classifications[best - 1]
         # plt.plot(range(1, len(errors)+1), np.array(errorsPerCent))
         # plt.show()
         return classifications[best - 1]
@@ -241,8 +256,8 @@ class Kin:
         gaps, s_k, K = gap.gap_statistic(X, refs=None, B=10, K=range(1, len(descriptors) + 1), N_init=10)
         bestKValue = gap.find_optimal_k(gaps, s_k, K)
         if printDetails: print "Optimal K -> ", bestKValue, " of ", len(descriptors)
-        classification = KMeans(n_clusters=bestKValue, random_state=0).fit(X)
-        if printDetails: print "Labels -> ", classification.labels_
+        classification = KMeans(n_clusters=bestKValue, random_state=0).fit(X).labels_
+        if printDetails: print "Labels -> ", classification
         return classification
 
     def intraClusterDistanceCentroids(self, classification, X):
@@ -285,7 +300,7 @@ class Kin:
         top = None
         minError = scipy.spatial.distance.euclidean(X[0], X[point_index])
         for i, x in enumerate(X[:-1]):
-            if (classification.labels_[i] == classification.labels_[point_index]):
+            if (classification[i] == classification[point_index]):
                 error = scipy.spatial.distance.euclidean(x, X[point_index])
                 if error <= minError:
                     minError = error
@@ -391,29 +406,31 @@ class Kin:
         recognized = False
         descriptor_number = 0
         cap = cv2.VideoCapture(dataset_folder + '/' + self._filename + '/rgbReg_video.mj2')
-        while cap.isOpened() and frame_number < len(self._frames):
+        while cap.isOpened() and frame_number < len(self._frames) and descriptor_number < len(classifications):
             ret, frame = cap.read()
 
             X = allFeaturesDescriptors[:len(allFeaturesDescriptors)-len(newDescriptors) + 1 + descriptor_number]
-            if self._frames[frame_number]._face is not None and descriptor_number < len(classifications):
+            if frame_number >= newDescriptors[descriptor_number]._start_frame and \
+                            frame_number <= newDescriptors[descriptor_number]._end_frame:
                 recognized = True
-                cv2.rectangle(frame, (self._frames[frame_number]._face._boundingBox._lu.asArray()),
-                          (self._frames[frame_number]._face._boundingBox._rb.asArray()), (0, 255, 0), 3)
-                unique, counts = np.unique(classifications[descriptor_number].labels_, return_counts=True)
+                if self._frames[frame_number]._face is not None:
+                    cv2.rectangle(frame, (self._frames[frame_number]._face._boundingBox._lu.asArray()),
+                              (self._frames[frame_number]._face._boundingBox._rb.asArray()), (0, 255, 0), 3)
+                unique, counts = np.unique(classifications[descriptor_number], return_counts=True)
                 #Founded a match
-                if dict(zip(unique, counts))[classifications[descriptor_number].labels_[-1]] > 1:
+                if dict(zip(unique, counts))[classifications[descriptor_number][-1]] > 1:
                     #i_best = self.nearestPointToCentroid(classifications[descriptor_number], classifications[descriptor_number].labels_[-1], X)
                     i_best = self.nearestPointSameCluster(classifications[descriptor_number],X,len(X)-1)
                     #TODO: compute accuracy method
                     # accuracy = 100-(newDescriptors[0].featuresDistance(X[i_best], X[-1])-Descriptor.euclideanThreshold)*100
 
-                    cv2.putText(frame, "Recognized ", (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                    # cv2.putText(frame, "Recognized ", (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
                     image = cv2.imread(savedFrames_folder + "/" + newDescriptors[0].realImageName(i_best+1) + ".jpg")
                     cv2.imshow('Person recognized', image)
 
                 #New person identified
                 else:
-                    cv2.putText(frame, "New person", (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                    # cv2.putText(frame, "New person", (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
                     image = cv2.imread(dataset_folder + "/new-person.jpg")
                     cv2.imshow('Person recognized', image)
             else:

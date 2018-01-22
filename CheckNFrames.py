@@ -74,6 +74,8 @@ class CheckNFrames:
             clRights.append(descr._clavicleRight) if descr._clavicleRight is not None else None
             chestColor.append(descr._chestColor) if descr._chestColor is not None else None
         descriptor._filename = self._filename
+        descriptor._start_frame = descriptors[0]._frame._frame_number
+        descriptor._end_frame = descriptors[-1]._frame._frame_number
         descriptor._shoulderDistance = np.median(shoulderDistances) if len(shoulderDistances) > 0 else None
         descriptor._leftArmLong = np.median(leftArmLongs) if len(leftArmLongs) > 0 else None
         descriptor._rightArmLong = np.median(rightArmLongs) if len(rightArmLongs) > 0 else None
