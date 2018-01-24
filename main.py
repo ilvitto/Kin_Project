@@ -38,7 +38,7 @@ dataset4 = "0065"
 
 #70 - 68 - 64
 kin1 = Kin.Kin()
-desc1, classification1 = kin1.run('0070')
+desc1, classification1 = kin1.run('0078')
 
 
 # kin2 = Kin.Kin()

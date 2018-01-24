@@ -48,7 +48,8 @@ class Kin:
         if (os.path.isfile(OUTPUT_FILE) and os.path.isfile(NUM_CLUSTERS)):
 
             self._allDescriptors, oldClusters = self.load_people(OUTPUT_FILE, NUM_CLUSTERS)
-            print "Dataset: ",len(self._allDescriptors)
+            print "Dataset: ", len(self._allDescriptors)
+            print "Number of people: ", oldClusters
 
         # self.load_all_datasets()
         self._filename = filename
@@ -60,6 +61,8 @@ class Kin:
             print "Processing..."
             all_classifications = []
             for descriptor in descriptors:
+
+                print descriptor.getFeatures()
                 #Save relevant frame for each median descriptor
                 self.saveRelevantFrame(descriptor)
 
@@ -76,8 +79,7 @@ class Kin:
                 if len(self._allDescriptors) == 1:
                     classification = KMeans(n_clusters=1, random_state=0).fit(self._allDescriptors).labels_
                 elif len(self._allDescriptors) < 4:
-                    #TODO: Da gestire l'inclusione del colore: MOLTO MEGLIO ma solo se STESSO VIDEO
-                    #STESSO VIDEO!! DAVVERO?
+                    #STESSO VIDEO
                     best_match = 0
                     for i, oldDesc in enumerate(self._allDescriptors[:-1]):
                         if(descriptor.featuresDistance(descriptor.getFeatures(), oldDesc) <
@@ -104,7 +106,7 @@ class Kin:
 
                 all_classifications.append(classification)
                 oldClusters = len(set(classification))
-                print classification
+
 
                 # PRINT DOUBLE IMAGES
                 # targetLabel = classification.labels_[-1]
@@ -177,7 +179,6 @@ class Kin:
         blocks = 0
 
         for i, frame in enumerate(self._frames):
-            # print i + 1, " of ", len(self._frames)
             if frame.isVeryGood(Descriptor.usedJoints):
                 if (needNewBlock):
                     needNewBlock = False
@@ -195,6 +196,7 @@ class Kin:
             for descriptor2 in descriptors:
                 print descriptor.distancePerFeatures(np.array(descriptor.getFeatures()), np.array(descriptor2.getFeatures())), "...", \
                     descriptor.isNearToEachFeatures(np.array(descriptor2.getFeatures()))
+            print '---'
 
         if descriptors == []:
             print "No descriptors founded in the video #" + self._filename
@@ -258,7 +260,7 @@ class Kin:
         if printDetails: print "Using GAP method..."
         X = np.stack(descriptors[i] for i in range(len(descriptors)))
         if printDetails: print "Finding best K..."
-        gaps, s_k, K = gap.gap_statistic(X, refs=None, B=10, K=range(np.maximum(1,oldClusters-2), np.minimum(len(descriptors + 1), oldClusters + 2)), N_init=10)
+        gaps, s_k, K = gap.gap_statistic(X, refs=None, B=10, K=range(np.maximum(1,oldClusters-2), np.minimum(len(descriptors + 1), oldClusters + 3)), N_init=10)
         bestKValue = gap.find_optimal_k(gaps, s_k, K)
         if printDetails: print "Optimal K -> ", bestKValue, " of ", len(descriptors)
         classification = KMeans(n_clusters=bestKValue, random_state=0).fit(X).labels_
@@ -303,11 +305,23 @@ class Kin:
     #Restituisce il punto piu vicino a X[point_index] tra i punti dello stesso cluster
     def nearestPointSameCluster(self, classification, X, point_index):
         top = None
-        minError = scipy.spatial.distance.euclidean(X[0], X[point_index])
+        minError = None
         for i, x in enumerate(X[:-1]):
             if (classification[i] == classification[point_index]):
                 error = scipy.spatial.distance.euclidean(x, X[point_index])
-                if error <= minError:
+                if minError is None or error <= minError:
+                    minError = error
+                    top = i
+        return top
+
+    # Restituisce il punto piu vicino a X[point_index] tra i punti dello stesso cluster
+    def nearestPointDifferentCluster(self, classification, X, point_index):
+        top = None
+        minError = None
+        for i, x in enumerate(X[:-1]):
+            if (classification[i] != classification[point_index]):
+                error = scipy.spatial.distance.euclidean(x, X[point_index])
+                if minError is None or error <= minError:
                     minError = error
                     top = i
         return top
@@ -431,9 +445,14 @@ class Kin:
                     #i_best = self.nearestPointToCentroid(classifications[descriptor_number], classifications[descriptor_number].labels_[-1], X)
                     i_best = self.nearestPointSameCluster(classifications[descriptor_number],X,len(X)-1)
                     #TODO: compute accuracy method
-                    # accuracy = 100-(newDescriptors[0].featuresDistance(X[i_best], X[-1])-Descriptor.euclideanThreshold)*100
+                    nearest_diff = self.nearestPointDifferentCluster(classifications[descriptor_number],X,len(X)-1)
+                    if i_best is not None and nearest_diff is not None:
+                        accuracy = (1 - (newDescriptors[0].featuresDistance(X[i_best], X[-1]) / (2 * newDescriptors[0].featuresDistance(X[nearest_diff], X[-1])) ))*100
+                    else:
+                        accuracy = '!'
+                    #accuracy = 100-abs((newDescriptors[0].featuresDistance(X[i_best], X[-1])-Descriptor.euclideanThreshold)*100)
 
-                    # cv2.putText(frame, "Recognized ", (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                    cv2.putText(frame, "Recognized "+str(accuracy), (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
                     image = cv2.imread(savedFrames_folder + "/" + newDescriptors[0].realImageName(i_best+1) + ".jpg")
                     cv2.imshow('Person recognized', image)
 
@@ -453,62 +472,5 @@ class Kin:
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
             frame_number += 1
-        cap.release()
-        cv2.destroyAllWindows()
-
-
-    #TODO: To fix for second or third videos
-    def showVideo(self, descriptors, classifications):
-
-        cap = cv2.VideoCapture(dataset_folder + '/' + self._filename + '/rgbReg_video.mj2')
-
-        frame_number = 0
-        descriptor_number = 0
-        founded = False
-        first = True
-        n_frames = 0
-        identified = False
-        while cap.isOpened() and frame_number < len(self._frames):
-            ret, frame = cap.read()
-
-            if self._frames[frame_number]._face is not None:
-                cv2.rectangle(frame, (self._frames[frame_number]._face._boundingBox._lu.asArray()), (self._frames[frame_number]._face._boundingBox._rb.asArray()), (0, 255, 0), 3)
-                founded = True
-                n_frames += 1
-                X = self._allDescriptors[:descriptor_number+1]
-                # for descr in descriptors[:descriptor_number]:
-                #     X.append(descr.getFeatures())
-                i_best = None
-                unique, counts = np.unique(classifications[descriptor_number].labels_, return_counts=True)
-                if dict(zip(unique, counts))[classifications[descriptor_number].labels_[-1]] > 1:
-                    i_best = self.nearestPointToCentroid(classifications[descriptor_number],classifications[descriptor_number].labels_[-1],X)
-                if i_best is not None and first:
-                    image = cv2.imread(dataset_folder + "/" + self._filename + "/rgbReg_frames/" + descriptors[0].realImageName(descriptors[i_best]._frame._frame_number) + ".jpg")
-                    cv2.imshow('Person recognized', image)
-                    #self.showImage(image, 'Person recognized')
-                    first = False
-                    identified = True
-                elif not identified:
-                    cv2.putText(frame, "New Person identified", (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
-                    image = cv2.imread(dataset_folder + "/new-person.jpg")
-                    cv2.imshow('Person recognized', image)
-
-            else:
-                if founded:
-                    descriptor_number += 1
-                    first = True
-                    identified = False
-                #show unknown image
-                image = cv2.imread(dataset_folder + "/unknown.jpg")
-                cv2.imshow('Person recognized', image)
-                founded = False
-                n_frames = 0
-            cv2.imshow('Video', frame)
-
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-
-            frame_number += 1
-
         cap.release()
         cv2.destroyAllWindows()

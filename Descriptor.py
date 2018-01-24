@@ -11,7 +11,7 @@ class Descriptor:
                   Joint.KneeLeft, Joint.KneeRight, Joint.AnkleLeft, Joint.AnkleRight, Joint.Neck]
 
 
-    featuresLimit = [0.05,0.05,0.05,0.08,0.08,0.12,0.03,0.05]
+    featuresLimit = [0.05,0.05,0.05,0.08,0.08,0.12,0.03,0.05, 0.05]
     colorLimit = [0.05, 0.05, 0.05]
 
     euclideanThreshold = 0.08
@@ -32,6 +32,7 @@ class Descriptor:
             self._height = self.getHeight()
             self._clavicleLeft = self.getClavicleLeft()
             self._clavicleRight = self.getClavicleRight()
+            self._hipBone = self.getHipBone()
 
             self._chestColor = self.getChestColor()
         else:
@@ -47,6 +48,7 @@ class Descriptor:
             self._height = None
             self._clavicleLeft = None
             self._clavicleRight = None
+            self._hipBone = None
 
             self._chestColor = None
 
@@ -54,6 +56,9 @@ class Descriptor:
         if self._joints is not None and self._joints[j1].isTracked() and self._joints[j2].isTracked():
             return self._joints[j1].distance(self._joints[j2])
         return None
+
+    def getHipBone(self):
+        return self.jointsDistance(Joint.HipLeft, Joint.HipRight)
 
     def getShoulderDistance(self):
         d1 = self.jointsDistance(Joint.ShoulderLeft, Joint.SpineShoulder)
@@ -177,7 +182,7 @@ class Descriptor:
     # _shoulderDistance, _shoulderDirectDistance, _leftArmLong, _rightArmLong, _leftLegLong, _rightLegLong, _height, _clavicleLeft, _clavicleRight
     def getFeatures(self):
         return [self._shoulderDistance, self._leftArmLong, self._rightArmLong \
-            , self._leftLegLong, self._rightLegLong, self._height, self._clavicleLeft, self._clavicleRight]
+            , self._leftLegLong, self._rightLegLong, self._height, self._clavicleLeft, self._clavicleRight, self._hipBone]
 
     #TODO: Normalize values
     def getColorFeature(self):

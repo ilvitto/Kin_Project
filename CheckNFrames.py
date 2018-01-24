@@ -59,6 +59,7 @@ class CheckNFrames:
         heights = []
         clLefts = []
         clRights = []
+        hipBones = []
         chestColor = []
         descriptor = Descriptor()
         for descr in descriptors:
@@ -72,6 +73,7 @@ class CheckNFrames:
             heights.append(descr._height) if descr._height is not None else None
             clLefts.append(descr._clavicleLeft) if descr._clavicleLeft is not None else None
             clRights.append(descr._clavicleRight) if descr._clavicleRight is not None else None
+            hipBones.append(descr._hipBone) if descr._hipBone is not None else None
             chestColor.append(descr._chestColor) if descr._chestColor is not None else None
         descriptor._filename = self._filename
         descriptor._start_frame = descriptors[0]._frame._frame_number
@@ -84,6 +86,7 @@ class CheckNFrames:
         descriptor._height = np.median(heights) if len(heights) > 0 else None
         descriptor._clavicleLeft = np.median(clLefts) if len(clLefts) > 0 else None
         descriptor._clavicleRight = np.median(clRights) if len(clRights) > 0 else None
+        descriptor._hipBone =  np.median(hipBones) if len(hipBones) > 0 else None
         descriptor._chestColor = np.mean(chestColor, axis=(0)) if len(chestColor) > 0 else None
         return descriptor
 
