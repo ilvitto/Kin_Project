@@ -62,7 +62,6 @@ class Kin:
             all_classifications = []
             for descriptor in descriptors:
 
-                print descriptor.getFeatures()
                 #Save relevant frame for each median descriptor
                 self.saveRelevantFrame(descriptor)
 
@@ -108,28 +107,17 @@ class Kin:
                 oldClusters = len(set(classification))
 
 
-                # PRINT DOUBLE IMAGES
-                # targetLabel = classification.labels_[-1]
-                #
-                # oldImageNumber = None
-                # unique, counts = np.unique(classification.labels_, return_counts=True)
-                # if dict(zip(unique, counts))[targetLabel] > 1:
-                #     oldImageNumber = self.nearestPointToCentroid(classification, targetLabel, self._allDescriptors)
-                #
-                # newImage = cv2.imread(dataset_folder + "/" + filename + "/rgbReg_frames/" + descriptor.realImageName(descriptor._frame._frame_number) + ".jpg")
-                # if oldImageNumber is not None:
-                #     oldImage = cv2.imread(savedFrames_folder + "/" + descriptor.realImageName(oldImageNumber + 1) + ".jpg")
-                #     self.showDoubleImage(oldImage, newImage, 'Recognition from database', 'New frame')
-                # else:
-                #     self.showImage(newImage, 'New person classified')
+
 
             if len(descriptors) > 0:
                 classification = self.classify(self._allDescriptors, oldClusters,  colors=colors, method=method, printDetails=printDetails)
 
-            # SHOW VIDEO
+            # SHOW VIDEO OR SHOW IMAGES
             if self._allDescriptors is not None:
-                #self.showVideo(descriptors, all_classifications)
-                self.showVideo2(self._allDescriptors, descriptors, all_classifications)
+                if self.askVideo():
+                    self.showVideo(self._allDescriptors, descriptors, all_classifications)
+                else:
+                    self.showImagesResults(self._allDescriptors, descriptors, all_classifications)
 
             if len(descriptors) > 0:
                 if self.ask_supervised():
@@ -192,12 +180,6 @@ class Kin:
                 currentFrames = []
                 needNewBlock = True
 
-        for descriptor in descriptors:
-            for descriptor2 in descriptors:
-                print descriptor.distancePerFeatures(np.array(descriptor.getFeatures()), np.array(descriptor2.getFeatures())), "...", \
-                    descriptor.isNearToEachFeatures(np.array(descriptor2.getFeatures()))
-            print '---'
-
         if descriptors == []:
             print "No descriptors founded in the video #" + self._filename
         else:
@@ -215,6 +197,13 @@ class Kin:
 
     def ask_supervised(self):
         sys.stdout.write("Do you want to save data classification? (y/n)")
+        s = raw_input().lower()
+        if s == "y" or s == "Yes":
+            return True
+        return False
+
+    def askVideo(self):
+        sys.stdout.write("Do you want to show the video?")
         s = raw_input().lower()
         if s == "y" or s == "Yes":
             return True
@@ -398,6 +387,7 @@ class Kin:
 
     def showDoubleImage(self, img1, img2, title1='Image 1', title2='Image 2'):
         f = pylab.figure()
+        f.set_size_inches(10,6)
         arr = np.asarray(img1)
         f.add_subplot(1, 2, 1)
         pylab.axis("off")
@@ -405,6 +395,7 @@ class Kin:
         pylab.title(title1)
         arr = np.asarray(img2)
         f.add_subplot(1, 2, 2)
+        pylab.axis("off")
         pylab.imshow(arr)
         pylab.title(title2)
         pylab.show()
@@ -424,7 +415,29 @@ class Kin:
         for name in os.listdir(savedFrames_folder):
             os.remove(savedFrames_folder + '/' + name)
 
-    def showVideo2(self, allFeaturesDescriptors, newDescriptors, classifications):
+    def showImagesResults(self, allFeaturesDescriptors, newDescriptors, classifications):
+
+        #PRINT DOUBLE IMAGES
+        descriptor_number = 0
+        for classification in classifications:
+            targetLabel = classification[-1]
+
+            X = allFeaturesDescriptors[:len(allFeaturesDescriptors)-len(newDescriptors) + 1 + descriptor_number]
+            oldImageNumber = None
+            unique, counts = np.unique(classification, return_counts=True)
+            #Founded a corrispondence
+            if dict(zip(unique, counts))[targetLabel] > 1:
+                oldImageNumber = self.nearestPointSameCluster(classification, X, len(X)-1)
+
+            newImage = cv2.imread(dataset_folder + "/" + self._filename + "/rgbReg_frames/" + newDescriptors[0].realImageName(newDescriptors[descriptor_number]._frame._frame_number) + ".jpg")
+            if oldImageNumber is not None:
+                oldImage = cv2.imread(savedFrames_folder + "/" + newDescriptors[0].realImageName(oldImageNumber + 1) + ".jpg")
+                self.showDoubleImage(oldImage, newImage, 'Recognition from database', 'New frame')
+            else:
+                self.showImage(newImage, 'New person classified')
+            descriptor_number += 1
+
+    def showVideo(self, allFeaturesDescriptors, newDescriptors, classifications):
         frame_number = 0
         recognized = False
         descriptor_number = 0
@@ -447,12 +460,12 @@ class Kin:
                     #TODO: compute accuracy method
                     nearest_diff = self.nearestPointDifferentCluster(classifications[descriptor_number],X,len(X)-1)
                     if i_best is not None and nearest_diff is not None:
-                        accuracy = (1 - (newDescriptors[0].featuresDistance(X[i_best], X[-1]) / (2 * newDescriptors[0].featuresDistance(X[nearest_diff], X[-1])) ))*100
+                        accuracy = round((1 - (newDescriptors[0].featuresDistance(X[i_best], X[-1]) / (2 * newDescriptors[0].featuresDistance(X[nearest_diff], X[-1])) ))*100,2)
                     else:
                         accuracy = '!'
                     #accuracy = 100-abs((newDescriptors[0].featuresDistance(X[i_best], X[-1])-Descriptor.euclideanThreshold)*100)
 
-                    cv2.putText(frame, "Recognized "+str(accuracy), (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                    cv2.putText(frame, "Recognized "+str(accuracy)+'%', (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
                     image = cv2.imread(savedFrames_folder + "/" + newDescriptors[0].realImageName(i_best+1) + ".jpg")
                     cv2.imshow('Person recognized', image)
 
