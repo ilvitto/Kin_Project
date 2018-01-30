@@ -370,7 +370,9 @@ class Kin:
         return
 
     def removeLastNImages(self, n):
-        names = [name for name in os.listdir(savedFrames_folder) if os.path.isfile(os.path.join(savedFrames_folder, name))][-n:]
+        names = [name for name in os.listdir(savedFrames_folder) if os.path.isfile(os.path.join(savedFrames_folder, name))]
+        names.sort()
+        names = names[-n:]
         for name in names:
             os.remove(savedFrames_folder + '/' + name)
 
@@ -465,7 +467,7 @@ class Kin:
                         accuracy = '!'
                     #accuracy = 100-abs((newDescriptors[0].featuresDistance(X[i_best], X[-1])-Descriptor.euclideanThreshold)*100)
 
-                    cv2.putText(frame, "Recognized "+str(accuracy)+'%', (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                    cv2.putText(frame, "Recognized "+str(accuracy)+'%', (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                     image = cv2.imread(savedFrames_folder + "/" + newDescriptors[0].realImageName(i_best+1) + ".jpg")
                     cv2.imshow('Person recognized', image)
 
