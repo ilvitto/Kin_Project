@@ -35,12 +35,16 @@ class Kin:
         self._filename = None
         self._allDescriptors = None
 
-    def run(self, filename=None, colors=False, method=GAP, printDetails=True):
+    def run(self, filename=None, colors=False, method=GAP, printDetails=True, clear=False):
         classification = None
         oldClusters = 0
 
-        # check choherence between stored images and dataset file
-        self.checkCoherence()
+        #clear the database
+        if clear:
+            self.emptyDatabase()
+        else:
+            # check choherence between stored images and dataset file
+            self.checkCoherence()
 
         # load dataset
         if (os.path.isfile(OUTPUT_FILE) and os.path.isfile(NUM_CLUSTERS)):
@@ -185,7 +189,7 @@ class Kin:
 
         return descriptors
 
-    # TODO: Check color invariant
+    #Color invariant
     def checkIfColorIsRelevant(self, classification, classification_with_color):
         # check if there are equal centroids excluding colors (last 3 features)
         pass
@@ -194,14 +198,14 @@ class Kin:
         return CheckNFrames(frames, self._filename)._descriptorMedian
 
     def ask_supervised(self):
-        sys.stdout.write("Do you want to save data classification? (y/n)")
+        sys.stdout.write("Do you want to save data classification? (y/n) ")
         s = raw_input().lower()
         if s == "y" or s == "Yes":
             return True
         return False
 
     def askVideo(self):
-        sys.stdout.write("Do you want to show the video?")
+        sys.stdout.write("Do you want to show the video? (y/n) ")
         s = raw_input().lower()
         if s == "y" or s == "Yes":
             return True
@@ -229,7 +233,8 @@ class Kin:
             errorsPerCent.append((max(errors) - error) / (max(errors) - min(errors)) * 100)
 
         found = False
-        threshold = 15  # TODO: Choose a better threshold
+        #Setting the threshold
+        threshold = 15
         best = 1
         for i in range(1, len(errorsPerCent)):
             if errorsPerCent[i] - errorsPerCent[i - 1] > threshold:
@@ -461,17 +466,17 @@ class Kin:
                 unique, counts = np.unique(classifications[descriptor_number], return_counts=True)
                 #Founded a match
                 if dict(zip(unique, counts))[classifications[descriptor_number][-1]] > 1:
-                    #i_best = self.nearestPointToCentroid(classifications[descriptor_number], classifications[descriptor_number].labels_[-1], X)
                     i_best = self.nearestPointSameCluster(classifications[descriptor_number],X,len(X)-1)
-                    #TODO: compute accuracy method
-                    nearest_diff = self.nearestPointDifferentCluster(classifications[descriptor_number],X,len(X)-1)
-                    if i_best is not None and nearest_diff is not None:
-                        accuracy = round((1 - (newDescriptors[0].featuresDistance(X[i_best], X[-1]) / (2 * newDescriptors[0].featuresDistance(X[nearest_diff], X[-1])) ))*100,2)
-                    else:
-                        accuracy = '!'
+
+                    # COMPUTE ACCURACY
+                    # nearest_diff = self.nearestPointDifferentCluster(classifications[descriptor_number],X,len(X)-1)
+                    # if i_best is not None and nearest_diff is not None:
+                    #     accuracy = round((1 - (newDescriptors[0].featuresDistance(X[i_best], X[-1]) / (2 * newDescriptors[0].featuresDistance(X[nearest_diff], X[-1])) ))*100,2)
+                    # else:
+                    #     accuracy = '!'
                     #accuracy = 100-abs((newDescriptors[0].featuresDistance(X[i_best], X[-1])-Descriptor.euclideanThreshold)*100)
 
-                    cv2.putText(frame, "Recognized "+str(accuracy)+'%', (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                    cv2.putText(frame, "Recognized", (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                     image = cv2.imread(savedFrames_folder + "/" + newDescriptors[0].realImageName(i_best+1) + ".jpg")
                     cv2.imshow('Person recognized', image)
 

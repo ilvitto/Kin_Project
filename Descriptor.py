@@ -16,8 +16,6 @@ class Descriptor:
 
     euclideanThreshold = 0.08
 
-
-    #TODO: normalizzare l'altezza per il calcolo delle features?
     def __init__(self, frame=None, filename=None):
         if (frame is not None and frame._body is not None):
             self._frame = frame
@@ -184,7 +182,6 @@ class Descriptor:
         return [self._shoulderDistance, self._leftArmLong, self._rightArmLong \
             , self._leftLegLong, self._rightLegLong, self._height, self._clavicleLeft, self._clavicleRight, self._hipBone]
 
-    #TODO: Normalize values
     def getColorFeature(self):
         return [self._chestColor[0], self._chestColor[1], self._chestColor[2]]
 
