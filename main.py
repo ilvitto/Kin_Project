@@ -2,9 +2,7 @@ import numpy as np
 import cv2
 from matplotlib import pyplot as plt
 import Kin
-from Rect2D import Rect2D
-from Point2D import Point2D
-from Joint import Joint
+import sys
 
 
 def blackImage(img):
@@ -37,9 +35,12 @@ dataset3 = "0070"
 dataset4 = "0065"
 
 #70 - 68 - 64
-kin1 = Kin.Kin()
-desc1, classification1 = kin1.run('0068')
-
+if len(sys.argv) > 1:
+    dataset_number = sys.argv[1]
+    kin1 = Kin.Kin()
+    desc1, classification1 = kin1.run(dataset_number)
+else:
+    print "Choose a dataset!"
 
 # kin2 = Kin.Kin()
 # desc2, classification2 = kin2.run(dataset2)

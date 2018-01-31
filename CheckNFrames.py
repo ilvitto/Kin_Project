@@ -1,6 +1,7 @@
 from Descriptor import Descriptor
 from Frame import Frame
 import numpy as np
+from matplotlib import pyplot as plt
 
 class CheckNFrames:
 
@@ -75,6 +76,9 @@ class CheckNFrames:
             clRights.append(descr._clavicleRight) if descr._clavicleRight is not None else None
             hipBones.append(descr._hipBone) if descr._hipBone is not None else None
             chestColor.append(descr._chestColor) if descr._chestColor is not None else None
+        # plt.plot(heights)
+        # plt.plot([0, len(heights) - 1], [np.median(heights), np.median(heights)])
+        # plt.show()
         descriptor._filename = self._filename
         descriptor._start_frame = descriptors[0]._frame._frame_number
         descriptor._end_frame = descriptors[-1]._frame._frame_number
