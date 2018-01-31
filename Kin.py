@@ -1,9 +1,10 @@
 import numpy as np
 import os
+import shutil
 import sys
-import time
 
 import cv2
+import pylab
 import scipy
 import scipy.io as sio
 from gap import gap
@@ -17,9 +18,6 @@ from Face import Face
 from FaceHD import FaceHD
 from Frame import Frame
 from InfoVideo import InfoVideo
-import pylab
-import matplotlib.cm as cm
-import shutil
 
 dataset_folder = "./dataset"
 savedFrames_folder = './savedFrames'
@@ -77,7 +75,7 @@ class Kin:
 
                 if len(self._allDescriptors) == 1:
                     classification = KMeans(n_clusters=1, random_state=0).fit(self._allDescriptors).labels_
-                elif len(self._allDescriptors) < 4:
+                elif len(self._allDescriptors) < 3:
                     #STESSO VIDEO
                     best_match = 0
                     for i, oldDesc in enumerate(self._allDescriptors[:-1]):
@@ -249,9 +247,15 @@ class Kin:
         if printDetails: print "Using GAP method..."
         X = np.stack(descriptors[i] for i in range(len(descriptors)))
         if printDetails: print "Finding best K..."
-        gaps, s_k, K = gap.gap_statistic(X, refs=None, B=10, K=range(np.maximum(1,oldClusters-2), np.minimum(len(descriptors + 1), oldClusters + 3)), N_init=10)
-        bestKValue = gap.find_optimal_k(gaps, s_k, K)
-        if printDetails: print "Optimal K -> ", bestKValue, " of ", len(descriptors)
+        ks = []
+        for i in range(5):
+            gaps, s_k, K = gap.gap_statistic(X, refs=None, B=10, K=range(np.maximum(1,oldClusters-2), np.minimum(len(descriptors + 1), oldClusters + 3)), N_init=10)
+            bestKValue = gap.find_optimal_k(gaps, s_k, K)
+            ks.append(bestKValue)
+        (values, counts) = np.unique(ks, return_counts=True)
+        ind = np.argmax(counts)
+        bestKValue = values[ind]
+        if printDetails: print "Optimal K -> ", bestKValue, " of ", len(descriptors), " chosen between ", ks
         classification = KMeans(n_clusters=bestKValue, random_state=0).fit(X).labels_
         if printDetails: print "Labels -> ", classification
         return classification
