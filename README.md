@@ -9,11 +9,11 @@ The application shows the analyzed video and on demand open a parallel window wh
 
 The example include only one video for dataset caused by memory problem.
 
-# What does it use to recognize people?
+## What does it use to recognize people?
 
 It extracts some features from the video and from the Kinect results like the joints, colors, etc.. and it computes these properties to determine a global descriptor for each frame of each person. Now it use the KMeans classification to determine the number of people in the scene and compute a the "GAP Statistics" to choose the best number of cluster.
 
-# Requirements
+## Requirements
 
 To use the application you have to install a python interpreter and the following packages:
 
@@ -22,7 +22,7 @@ To use the application you have to install a python interpreter and the followin
 * [ffmpeg]
 * [numpy, openCV, pylab, shutil, matplotlib, tk]
 
-# How to try it
+## How to try it
 
 To start the application just run the main file specifying the dataset name like this:
 
@@ -36,5 +36,8 @@ You can also add the parameter "clear" to delete the dataset and start a new com
 $ python main.py 0078 clear
 ```
 
+## Authors
+* **Lorenzo Niccolai**
+* **Fabio Vittorini**
 
 # Enjoy
