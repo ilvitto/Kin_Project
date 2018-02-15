@@ -16,11 +16,12 @@ class Descriptor:
 
     euclideanThreshold = 0.08
 
-    def __init__(self, frame=None, filename=None):
+    def __init__(self, frame=None, filename=None, dataset_folder="./dataset"):
         if (frame is not None and frame._body is not None):
             self._frame = frame
             self._joints = frame._body._joints
             self._filename = filename
+            self._dataset_folder = dataset_folder
             self._shoulderDistance = self.getShoulderDistance()
             self._shoulderDirectDistance = self.getDirectShoulderDistance()
             self._leftArmLong = self.getLeftArmLong()
@@ -37,6 +38,7 @@ class Descriptor:
             self._frame = None
             self._joints = None
             self._filename = None
+            self._dataset_folder = None
             self._shoulderDistance = None
             self._shoulderDirectDistance = None
             self._leftArmLong = None
@@ -122,8 +124,8 @@ class Descriptor:
         if self._joints is not None and self._joints[Joint.SpineMid].isTracked():
             str_frame_number = self.realImageName(self._frame._frame_number)
 
-            rgbImage = cv2.imread('./dataset/' + self._filename + '/rgbReg_frames/' + str_frame_number + '.jpg')
-            indexImage = cv2.imread('./dataset/' + self._filename + '/bodyIndex_frames/' + str_frame_number + ".png")
+            rgbImage = cv2.imread(self._dataset_folder + '/' + self._filename + '/rgbReg_frames/' + str_frame_number + '.jpg')
+            indexImage = cv2.imread(self._dataset_folder + '/' + self._filename + '/bodyIndex_frames/' + str_frame_number + ".png")
             indexImage = cv2.cvtColor(indexImage, cv2.COLOR_BGR2GRAY)
             rgbImage = cv2.cvtColor(rgbImage, cv2.COLOR_BGR2RGB)
 

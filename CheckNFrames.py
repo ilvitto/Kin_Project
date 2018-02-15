@@ -5,9 +5,10 @@ from matplotlib import pyplot as plt
 
 class CheckNFrames:
 
-    def __init__(self, frames = [], filename = None):
+    def __init__(self, frames = [], filename = None, dataset_folder='./dataset'):
         self._frames = frames
         self._filename = filename
+        self._dataset_folder = dataset_folder
         # self._descriptorAvg = self.getDescriptorAvg(frames)
         self._descriptorMedian = self.getDescriptorMedian(frames, filename)
         self._descriptorMedian._frame = self.nearestFrameToMedianDescriptor()
@@ -80,6 +81,7 @@ class CheckNFrames:
         # plt.plot([0, len(heights) - 1], [np.median(heights), np.median(heights)])
         # plt.show()
         descriptor._filename = self._filename
+        descriptor._dataset_folder = self._dataset_folder
         descriptor._start_frame = descriptors[0]._frame._frame_number
         descriptor._end_frame = descriptors[-1]._frame._frame_number
         descriptor._shoulderDistance = np.median(shoulderDistances) if len(shoulderDistances) > 0 else None

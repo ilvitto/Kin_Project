@@ -19,8 +19,10 @@ from FaceHD import FaceHD
 from Frame import Frame
 from InfoVideo import InfoVideo
 
-dataset_folder = "./dataset"
+main_folder = "./"
 savedFrames_folder = './savedFrames'
+new_person_image = "new-person.jpg"
+unknown_person_image = "unknown.jpg"
 GAP = "gap"
 THRESH = "thresh"
 
@@ -29,11 +31,12 @@ NUM_CLUSTERS = "num_clusters.txt"
 
 
 class Kin:
-    def __init__(self):
+    def __init__(self, dataset_folder="./dataset"):
         self._infoVideo = None
         self._frames = None
         self._filename = None
         self._allDescriptors = None
+        self._dataset_folder = dataset_folder
 
     def run(self, filename=None, colors=False, method=GAP, printDetails=True, clear=False):
         classification = None
@@ -56,7 +59,7 @@ class Kin:
         # self.load_all_datasets()
         self._filename = filename
         if filename is not None:
-            self.load(dataset_folder + "/" + filename + "/body_and_face.mat")
+            self.load(self._dataset_folder + "/" + filename + "/body_and_face.mat")
             # get descriptors
             descriptors = self.getDescriptors()
 
@@ -135,8 +138,8 @@ class Kin:
         return [], None
 
     def load_all_datasets(self):
-        for filename in os.listdir(dataset_folder):
-            self.load(dataset_folder + '/' + filename + "/body_and_face.mat")
+        for filename in os.listdir(self._dataset_folder):
+            self.load(self._dataset_folder + '/' + filename + "/body_and_face.mat")
 
     def load(self, filename):
         self._processMatlabData(sio.loadmat(filename, squeeze_me=True))
@@ -195,7 +198,7 @@ class Kin:
         pass
 
     def processFrames(self, frames):
-        return CheckNFrames(frames, self._filename)._descriptorMedian
+        return CheckNFrames(frames, self._filename, self._dataset_folder)._descriptorMedian
 
     def ask_supervised(self):
         sys.stdout.write("Do you want to save data classification? (y/n) ")
@@ -260,7 +263,7 @@ class Kin:
         (values, counts) = np.unique(ks, return_counts=True)
         ind = np.argmax(counts)
         bestKValue = values[ind]
-        if printDetails: print "Optimal K -> ", bestKValue, " of ", len(descriptors), " chosen between ", ks
+        if printDetails: print "Optimal K -> ", bestKValue, " of ", len(descriptors)
         classification = KMeans(n_clusters=bestKValue, random_state=0).fit(X).labels_
         if printDetails: print "Labels -> ", classification
         return classification
@@ -386,7 +389,7 @@ class Kin:
             os.remove(savedFrames_folder + '/' + name)
 
     def saveRelevantFrame(self, descriptor):
-        rgbReg_frames = dataset_folder + '/' + descriptor._filename + '/rgbReg_frames'
+        rgbReg_frames = self._dataset_folder + '/' + descriptor._filename + '/rgbReg_frames'
         if not os.path.exists(savedFrames_folder):
             os.makedirs(savedFrames_folder)
         counting = len([name for name in os.listdir(savedFrames_folder) if os.path.isfile(os.path.join(savedFrames_folder, name))])
@@ -440,7 +443,7 @@ class Kin:
             if dict(zip(unique, counts))[targetLabel] > 1:
                 oldImageNumber = self.nearestPointSameCluster(classification, X, len(X)-1)
 
-            newImage = cv2.imread(dataset_folder + "/" + self._filename + "/rgbReg_frames/" + newDescriptors[0].realImageName(newDescriptors[descriptor_number]._frame._frame_number) + ".jpg")
+            newImage = cv2.imread(self._dataset_folder + "/" + self._filename + "/rgbReg_frames/" + newDescriptors[0].realImageName(newDescriptors[descriptor_number]._frame._frame_number) + ".jpg")
             if oldImageNumber is not None:
                 oldImage = cv2.imread(savedFrames_folder + "/" + newDescriptors[0].realImageName(oldImageNumber + 1) + ".jpg")
                 self.showDoubleImage(oldImage, newImage, 'Recognition from database', 'New frame')
@@ -452,7 +455,7 @@ class Kin:
         frame_number = 0
         recognized = False
         descriptor_number = 0
-        cap = cv2.VideoCapture(dataset_folder + '/' + self._filename + '/rgbReg_video.mj2')
+        cap = cv2.VideoCapture(self._dataset_folder + '/' + self._filename + '/rgbReg_video.mj2')
         while cap.isOpened() and frame_number < len(self._frames) and descriptor_number < len(classifications):
             ret, frame = cap.read()
 
@@ -483,14 +486,14 @@ class Kin:
                 #New person identified
                 else:
                     # cv2.putText(frame, "New person", (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
-                    image = cv2.imread(dataset_folder + "/new-person.jpg")
+                    image = cv2.imread(main_folder + "/" + new_person_image)
                     cv2.imshow('Person recognized', image)
             else:
                 #First exit of the subject
                 if recognized:
                     recognized = False
                     descriptor_number += 1
-                image = cv2.imread(dataset_folder + "/unknown.jpg")
+                image = cv2.imread(main_folder + "/" + unknown_person_image)
                 cv2.imshow('Person recognized', image)
             cv2.imshow('Video', frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
