@@ -24,16 +24,16 @@ To use the application you have to install a python interpreter and the followin
 
 ## How to try it
 
-To start the application just run the main file specifying the dataset name like this:
+To start the application just run the main file specifying the path of the dataset folder and the name of the current video like this:
 
 ```
-$ python main.py 0078
+$ python main.py ./dataset 0078
 ```
 
 You can also add the parameter "clear" to delete the dataset and start a new computation:
 
 ```
-$ python main.py 0078 clear
+$ python main.py C:/project/dataset_folder 0078 clear
 ```
 
 ## Authors
