@@ -24,7 +24,7 @@ To use the application you have to install a python interpreter and the followin
 
 ## How to try it
 
-To start the application just run the main file specifying the path of the videos folder and the name of the used dataset like this:
+To start the application just run the main file specifying the path of the dataset folder and the name of the current video like this:
 
 ```
 $ python main.py ./dataset 0078
